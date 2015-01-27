@@ -149,7 +149,7 @@ LIB_OUTPUTS__QUOTED += \
 all: usblib.lib
 
 # Tool invocations
-usblib.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
+usblib.lib: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
 	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "usblib.lib" $(ORDERED_OBJS)

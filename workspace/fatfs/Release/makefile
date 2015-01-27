@@ -8,38 +8,9 @@ CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
-"./adc.obj" \
-"./aes.obj" \
-"./can.obj" \
-"./comp.obj" \
-"./cpu.obj" \
-"./crc.obj" \
-"./des.obj" \
-"./eeprom.obj" \
-"./emac.obj" \
-"./epi.obj" \
-"./epi_workaround_ccs.obj" \
-"./flash.obj" \
-"./fpu.obj" \
-"./gpio.obj" \
-"./hibernate.obj" \
-"./i2c.obj" \
-"./interrupt.obj" \
-"./lcd.obj" \
-"./mpu.obj" \
-"./pwm.obj" \
-"./qei.obj" \
-"./shamd5.obj" \
-"./ssi.obj" \
-"./sw_crc.obj" \
-"./sysctl.obj" \
-"./sysexc.obj" \
-"./systick.obj" \
-"./timer.obj" \
-"./uart.obj" \
-"./udma.obj" \
-"./usb.obj" \
-"./watchdog.obj" \
+"./diskio.obj" \
+"./ff.obj" \
+"./option/unicode.obj" \
 
 -include ../makefile.init
 
@@ -49,7 +20,9 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include option/subdir_vars.mk
 -include subdir_rules.mk
+-include option/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -137,29 +110,28 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 LIB_OUTPUTS += \
-driverlib.lib \
+fatfs.lib \
 
 LIB_OUTPUTS__QUOTED += \
-"driverlib.lib" \
+"fatfs.lib" \
 
 
 # All Target
-all: driverlib.lib
+all: fatfs.lib
 
 # Tool invocations
-driverlib.lib: $(OBJS)
+fatfs.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "driverlib.lib" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "fatfs.lib" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(LIB_OUTPUTS__QUOTED)
-	-$(RM) "adc.pp" "aes.pp" "can.pp" "comp.pp" "cpu.pp" "crc.pp" "des.pp" "eeprom.pp" "emac.pp" "epi.pp" "flash.pp" "fpu.pp" "gpio.pp" "hibernate.pp" "i2c.pp" "interrupt.pp" "lcd.pp" "mpu.pp" "pwm.pp" "qei.pp" "shamd5.pp" "ssi.pp" "sw_crc.pp" "sysctl.pp" "sysexc.pp" "systick.pp" "timer.pp" "uart.pp" "udma.pp" "usb.pp" "watchdog.pp" 
-	-$(RM) "epi_workaround_ccs.pp" 
-	-$(RM) "adc.obj" "aes.obj" "can.obj" "comp.obj" "cpu.obj" "crc.obj" "des.obj" "eeprom.obj" "emac.obj" "epi.obj" "epi_workaround_ccs.obj" "flash.obj" "fpu.obj" "gpio.obj" "hibernate.obj" "i2c.obj" "interrupt.obj" "lcd.obj" "mpu.obj" "pwm.obj" "qei.obj" "shamd5.obj" "ssi.obj" "sw_crc.obj" "sysctl.obj" "sysexc.obj" "systick.obj" "timer.obj" "uart.obj" "udma.obj" "usb.obj" "watchdog.obj" 
+	-$(RM) "diskio.pp" "ff.pp" "option\unicode.pp" 
+	-$(RM) "diskio.obj" "ff.obj" "option\unicode.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

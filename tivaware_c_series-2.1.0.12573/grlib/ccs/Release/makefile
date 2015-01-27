@@ -290,7 +290,7 @@ LIB_OUTPUTS__QUOTED += \
 all: grlib.lib
 
 # Tool invocations
-grlib.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
+grlib.lib: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
 	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "grlib.lib" $(ORDERED_OBJS)

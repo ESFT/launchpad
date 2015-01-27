@@ -37,28 +37,68 @@ extern "C"
 
 //*****************************************************************************
 //
+// Define the beginning and end of the flash storage area.  You must make sure
+// that this area is well clear of any space occupied by the application
+// binary, and that this space is not used for any other purpose.
+// The start and end addresses must be 1K aligned.  The end address is
+// exclusive - it is 1 value greater than the last valid location used for
+// storage.
+//
+//*****************************************************************************
+#define FLASH_STORE_START_ADDR  0x10000
+#define FLASH_STORE_END_ADDR    0x40000
+
+//*****************************************************************************
+//
+// Flash block write size
+//
+//*****************************************************************************
+#define FLASH_STORE_BLOCK_WRITE_SIZE 0x04
+
+//*****************************************************************************
+//
+// Flash block erase size
+//
+//*****************************************************************************
+#define FLASH_STORE_BLOCK_ERASE_SIZE 0x400
+
+//*****************************************************************************
+//
+// Empty data (all ones)
+//
+//*****************************************************************************
+#define FLASH_STORE_EMPTY_DATA 0xFFFFFFFF
+
+//*****************************************************************************
+//
+// Define the flash record header, which is a 3-byte signature and an added
+// one byte count of bytes in the record.  Saved at the beginning
+// of the write buffer.
+//
+//*****************************************************************************
+#define FLASH_STORE_RECORD_HEADER 0x53554100
+
+//*****************************************************************************
+//
 // Module function prototypes.
 //
 //*****************************************************************************
-extern uint32_t PACK(uint8_t, uint8_t, uint8_t, uint8_t);
-extern uint8_t UNPACK_C0(uint32_t);
-extern uint8_t UNPACK_C1(uint32_t);
-extern uint8_t UNPACK_C2(uint32_t);
-extern uint8_t UNPACK_C3(uint32_t);
-
-extern int FlashStoreInit(void);
-extern int32_t FlashStoreNewLogFile(uint32_t ui32StartAddr, int);
-extern int32_t FlashStoreWriteRecord(uint8_t *, int);
-extern int32_t FlashStoreSave(void);
-extern void FlashStoreErase(void);
-extern int32_t FlashStoreFree(void);
-extern int32_t FlashStoreUsed(void);
-extern uint32_t FlashStoreGetStartAddr(void);
-extern uint32_t FlashStoreGetEndAddr(void);
-extern uint32_t FlashStoreGetAddr(uint32_t);
+extern uint32_t pack(uint8_t, uint8_t, uint8_t, uint8_t);
+extern uint8_t  unpack_c0(uint32_t);
+extern uint8_t  unpack_c1(uint32_t);
+extern uint8_t  unpack_c2(uint32_t);
+extern uint8_t  unpack_c3(uint32_t);
+extern int32_t  FlashStoreInit(void);
+extern int32_t  FlashStoreNewLogFile(uint32_t ui32StartAddr, int);
+extern int32_t  FlashStoreWriteRecord(uint8_t *, int);
+extern int32_t  FlashStoreSave(void);
+extern void     FlashStoreErase(void);
+static int32_t  IsBlockFree(uint32_t ui32BaseAddr);
+extern int32_t  FlashStoreFree(void);
+extern int32_t  FlashStoreUsed(void);
+extern uint32_t FlashStoreGetData(uint32_t);
 extern uint32_t FlashStoreGetCurrentAddr(void);
 extern void     FlashStoreSetCurrentAddr(uint32_t);
-extern uint32_t FlashStoreGetHeader(void);
 
 //*****************************************************************************
 //

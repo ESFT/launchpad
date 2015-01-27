@@ -238,26 +238,26 @@ main(void) {
     } // main if (Chars avail)
   } // main while end
 
-  uint32_t StartAddr = FlashStoreGetStartAddr();
-  uint32_t EndAddr = FlashStoreGetEndAddr();
+  uint32_t StartAddr = FLASH_STORE_START_ADDR;
+  uint32_t EndAddr = FLASH_STORE_END_ADDR;
   uint32_t CurrAddr = StartAddr;
-  uint32_t Header = FlashStoreGetHeader();
+  uint32_t Header = FLASH_STORE_RECORD_HEADER;
   uint32_t packed_char, recordSize;
 
   LEDOn();
 
   while (1)
   {
-    packed_char = FlashStoreGetAddr(CurrAddr);
+    packed_char = FlashStoreGetData(CurrAddr);
     if((packed_char & 0xFFFFFF00) == Header) {
       recordSize = packed_char & 0xFF;
       for (i=0; i < (recordSize - 0x04) / 4; i++) {
         CurrAddr += 0x04;
-        packed_char = FlashStoreGetAddr(CurrAddr);
-        UARTCharPut(UART0_BASE, UNPACK_C0(packed_char));
-        UARTCharPut(UART0_BASE, UNPACK_C1(packed_char));
-        UARTCharPut(UART0_BASE, UNPACK_C2(packed_char));
-        UARTCharPut(UART0_BASE, UNPACK_C3(packed_char));
+        packed_char = FlashStoreGetData(CurrAddr);
+        UARTCharPut(UART0_BASE, unpack_c0(packed_char));
+        UARTCharPut(UART0_BASE, unpack_c1(packed_char));
+        UARTCharPut(UART0_BASE, unpack_c2(packed_char));
+        UARTCharPut(UART0_BASE, unpack_c3(packed_char));
       }
       UARTCharPut(UART0_BASE, '\r');
       UARTCharPut(UART0_BASE, '\n');

@@ -38,61 +38,6 @@
 
 //*****************************************************************************
 //
-// Char (un)packing in/from UINT32
-//
-//*****************************************************************************
-uint32_t
-PACK(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3) {
-    return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
-};
-
-uint8_t
-UNPACK_C0(uint32_t p)
-{
-    return p >> 24;
-}
-
-uint8_t
-UNPACK_C1(uint32_t p)
-{
-    return p >> 16;
-}
-
-uint8_t UNPACK_C2(uint32_t p)
-{
-    return p >> 8;
-}
-
-uint8_t
-UNPACK_C3(uint32_t p)
-{
-    return p;
-}
-
-//*****************************************************************************
-//
-// Define the beginning and end of the flash storage area.  You must make sure
-// that this area is well clear of any space occupied by the application
-// binary, and that this space is not used for any other purpose.
-// The start and end addresses must be 1K aligned.  The end address is
-// exclusive - it is 1 value greater than the last valid location used for
-// storage.
-//
-//*****************************************************************************
-#define FLASH_STORE_START_ADDR  0x10000
-#define FLASH_STORE_END_ADDR    0x40000
-
-//*****************************************************************************
-//
-// Define the flash record header, which is a 3-byte signature and an added
-// one byte count of bytes in the record.  Saved at the beginning
-// of the write buffer.
-//
-//*****************************************************************************
-#define FLASH_STORE_RECORD_HEADER 0x53554100
-
-//*****************************************************************************
-//
 // The next address in flash, that will be used for storing a data record.
 //
 //*****************************************************************************
@@ -108,11 +53,45 @@ static uint32_t g_pui32RecordBuf[25];
 
 //*****************************************************************************
 //
+// Char (un)packing in/from UINT32
+//
+//*****************************************************************************
+uint32_t
+pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3) {
+    return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
+};
+
+uint8_t
+unpack_c0(uint32_t p)
+{
+    return p >> 24;
+}
+
+uint8_t
+unpack_c1(uint32_t p)
+{
+    return p >> 16;
+}
+
+uint8_t
+unpack_c2(uint32_t p)
+{
+    return p >> 8;
+}
+
+uint8_t
+unpack_c3(uint32_t p)
+{
+    return p;
+}
+
+//*****************************************************************************
+//
 // Initializes the flash storage. This is a stub because there is nothing
 // special to do.
 //
 //*****************************************************************************
-int
+int32_t
 FlashStoreInit(void)
 {
   return FlashStoreNewLogFile(0x0, 0);
@@ -153,7 +132,7 @@ FlashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
     //
     // Search until a blank is found or the end of flash storage area
     //
-    while((HWREG(ui32Addr) != 0xFFFFFFFF) && (ui32Addr < FLASH_STORE_END_ADDR))
+    while((HWREG(ui32Addr) != FLASH_STORE_EMPTY_DATA) && (ui32Addr < FLASH_STORE_END_ADDR))
     {
         //
         // If a record signature is found, then increment to the next record
@@ -167,7 +146,7 @@ FlashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
             //
             // Just advance to the next location in flash
             //
-            ui32Addr += 0x04;
+            ui32Addr += FLASH_STORE_BLOCK_WRITE_SIZE;
         }
     }
 
@@ -231,7 +210,7 @@ FlashStoreWriteRecord(uint8_t *record, int size)
   //
   // Convert the count to bytes, be sure to pad to 32-bit alignment.
   //
-  uint32_t recordSize = size + 0x04 + (0x04 - (size % 0x04)) % 0x04;
+  uint32_t recordSize = size + FLASH_STORE_BLOCK_WRITE_SIZE + (FLASH_STORE_BLOCK_WRITE_SIZE - (size % FLASH_STORE_BLOCK_WRITE_SIZE)) % FLASH_STORE_BLOCK_WRITE_SIZE;
 
   //
   // Create the flash record header, which is a 3-byte signature and a
@@ -247,7 +226,7 @@ FlashStoreWriteRecord(uint8_t *record, int size)
   for (i=0; i < (size / 4); i++)
   {
 
-    g_pui32RecordBuf[i+1] = PACK(record[i*4], record[(i*4)+1], record[(i*4)+2], record[(i*4)+3]);
+    g_pui32RecordBuf[i+1] = pack(record[i*4], record[(i*4)+1], record[(i*4)+2], record[(i*4)+3]);
   }
 
   pui32Record = g_pui32RecordBuf;
@@ -271,47 +250,6 @@ FlashStoreWriteRecord(uint8_t *record, int size)
 
 //*****************************************************************************
 //
-// Return the current address being used for storing records.
-//
-//*****************************************************************************
-uint32_t
-FlashStoreGetCurrentAddr(void)
-{
-    return(g_ui32StoreAddr);
-}
-
-uint32_t
-FlashStoreGetAddr(uint32_t Addr)
-{
-  return (HWREG(Addr));
-}
-
-void
-FlashStoreSetCurrentAddr(uint32_t newAddr)
-{
-  g_ui32StoreAddr = newAddr;
-}
-
-uint32_t
-FlashStoreGetStartAddr(void)
-{
-  return(FLASH_STORE_START_ADDR);
-}
-
-uint32_t
-FlashStoreGetEndAddr(void)
-{
-  return(FLASH_STORE_END_ADDR);
-}
-
-uint32_t
-FlashStoreGetHeader(void)
-{
-  return(FLASH_STORE_RECORD_HEADER);
-}
-
-//*****************************************************************************
-//
 // Erase the data storage area of flash.
 //
 //*****************************************************************************
@@ -324,7 +262,7 @@ FlashStoreErase(void)
     // Loop through entire storage area and erase each page.
     //
     for(ui32Addr = FLASH_STORE_START_ADDR; ui32Addr < FLASH_STORE_END_ADDR;
-        ui32Addr += 0x400)
+        ui32Addr += FLASH_STORE_BLOCK_ERASE_SIZE)
     {
         FlashErase(ui32Addr);
     }
@@ -349,9 +287,9 @@ IsBlockFree(uint32_t ui32BaseAddr)
     //
     // Loop through every address in this block and test if it is blank.
     //
-    for(ui32Addr = 0; ui32Addr < 0x400; ui32Addr += 0x04)
+    for(ui32Addr = 0; ui32Addr < FLASH_STORE_BLOCK_ERASE_SIZE; ui32Addr += FLASH_STORE_BLOCK_WRITE_SIZE)
     {
-        if(HWREG(ui32BaseAddr + ui32Addr) != 0xFFFFFFFF)
+        if(HWREG(ui32BaseAddr + ui32Addr) != FLASH_STORE_EMPTY_DATA)
         {
             //
             // Found a non-blank location, so return indication that block
@@ -383,7 +321,7 @@ FlashStoreFree(void)
     // are free and non-free.
     //
     for(ui32Addr = FLASH_STORE_START_ADDR; ui32Addr < FLASH_STORE_END_ADDR;
-        ui32Addr += 0x400)
+        ui32Addr += FLASH_STORE_BLOCK_ERASE_SIZE)
     {
         if(IsBlockFree(ui32Addr))
         {
@@ -409,7 +347,7 @@ FlashStoreUsed(void)
     // are free and non-free.
     //
     for(ui32Addr = FLASH_STORE_START_ADDR; ui32Addr < FLASH_STORE_END_ADDR;
-        ui32Addr += 0x400)
+        ui32Addr += FLASH_STORE_BLOCK_ERASE_SIZE)
     {
         if(!IsBlockFree(ui32Addr))
         {
@@ -420,3 +358,36 @@ FlashStoreUsed(void)
     return ui32UsedBlocks;
 }
 
+
+//*****************************************************************************
+//
+// Return the current address being used for storing records.
+//
+//*****************************************************************************
+uint32_t
+FlashStoreGetCurrentAddr(void)
+{
+    return(g_ui32StoreAddr);
+}
+
+//*****************************************************************************
+//
+// Set the current address being used for storing records.
+//
+//*****************************************************************************
+void
+FlashStoreSetCurrentAddr(uint32_t newAddr)
+{
+  g_ui32StoreAddr = newAddr;
+}
+
+//*****************************************************************************
+//
+// Return the data in memory at the passed in address
+//
+//*****************************************************************************
+uint32_t
+FlashStoreGetData(uint32_t Addr)
+{
+  return (HWREG(Addr));
+}

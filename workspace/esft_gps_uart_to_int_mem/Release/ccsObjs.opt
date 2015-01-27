@@ -1,0 +1,1 @@
+"./flashstore.obj" "./main.obj" "./tm4c123gh6pm_startup_ccs.obj" "../tm4c123gh6pm.cmd" -l"libc.a" -l"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" 

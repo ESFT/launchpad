@@ -4,6 +4,8 @@
 
 SHELL = cmd.exe
 
+CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
+
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./flashstore.obj" \
@@ -11,7 +13,7 @@ $(GEN_CMDS__FLAG) \
 "./tm4c123gh6pm_startup_ccs.obj" \
 "../tm4c123gh6pm.cmd" \
 -l"libc.a" \
--l"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
+-l"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/workspace/esft_gps_uart_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
 
 -include ../makefile.init
 
@@ -122,19 +124,22 @@ BIN_OUTPUTS__QUOTED += \
 
 
 # All Target
-all: esft_gps_uart_to_int_mem.out secondary-outputs
+all: esft_gps_uart_to_int_mem.out
+
+dependents:
+	-cd C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release && $(MAKE) clean all
 
 # Tool invocations
-esft_gps_uart_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+esft_gps_uart_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_gps_uart_to_int_mem.map" --heap_size=0 --stack_size=512 -i"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/" -i"/lib" -i"/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_gps_uart_to_int_mem_linkInfo.xml" --rom_model -o "esft_gps_uart_to_int_mem.out" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_gps_uart_to_int_mem.map" --heap_size=0 --stack_size=512 -i"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_gps_uart_to_int_mem_linkInfo.xml" --rom_model -o "esft_gps_uart_to_int_mem.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 esft_gps_uart_to_int_mem.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	""  -o "esft_gps_uart_to_int_mem.hex" $(EXE_OUTPUTS__QUOTED)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armhex"  -o "esft_gps_uart_to_int_mem.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 
@@ -146,10 +151,9 @@ clean:
 	-@echo 'Finished clean'
 	-@echo ' '
 
-secondary-outputs: $(BIN_OUTPUTS)
-
 .PHONY: all clean dependents
 .SECONDARY:
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib:
 
 -include ../makefile.targets
 

@@ -4,7 +4,7 @@
 
 SHELL = cmd.exe
 
-CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.6
+CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
@@ -290,10 +290,10 @@ LIB_OUTPUTS__QUOTED += \
 all: grlib.lib
 
 # Tool invocations
-grlib.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
+grlib.lib: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armar" r "grlib.lib" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "grlib.lib" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

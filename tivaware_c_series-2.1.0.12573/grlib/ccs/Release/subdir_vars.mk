@@ -4,26 +4,26 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/canvas.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/charmap.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/checkbox.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/circle.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/container.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/context.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/image.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/imgbutton.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/keyboard.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/line.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/listbox.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr1bpp.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr4bpp.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr8bpp.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/pushbutton.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/radiobutton.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/rectangle.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/slider.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/string.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/widget.c 
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/canvas.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/charmap.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/checkbox.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/circle.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/container.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/context.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/image.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/imgbutton.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/keyboard.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/line.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/listbox.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr1bpp.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr4bpp.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr8bpp.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/pushbutton.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/radiobutton.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/rectangle.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/slider.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/string.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/widget.c 
 
 OBJS += \
 ./canvas.obj \
@@ -114,25 +114,25 @@ OBJS__QUOTED += \
 "widget.obj" 
 
 C_SRCS__QUOTED += \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/canvas.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/charmap.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/checkbox.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/circle.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/container.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/context.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/image.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/imgbutton.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/keyboard.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/line.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/listbox.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr1bpp.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr4bpp.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/offscr8bpp.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/pushbutton.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/radiobutton.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/rectangle.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/slider.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/string.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/grlib/widget.c" 
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/canvas.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/charmap.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/checkbox.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/circle.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/container.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/context.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/image.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/imgbutton.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/keyboard.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/line.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/listbox.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr1bpp.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr4bpp.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/offscr8bpp.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/pushbutton.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/radiobutton.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/rectangle.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/slider.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/string.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/grlib/widget.c" 
 
 

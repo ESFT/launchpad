@@ -4,14 +4,14 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbbuffer.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbdesc.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbdma.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbkeyboardmap.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbmode.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbringbuf.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbtick.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbulpi.c 
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbbuffer.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbdesc.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbdma.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbkeyboardmap.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbmode.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbringbuf.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbtick.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbulpi.c 
 
 OBJS += \
 ./usbbuffer.obj \
@@ -54,13 +54,13 @@ OBJS__QUOTED += \
 "usbulpi.obj" 
 
 C_SRCS__QUOTED += \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbbuffer.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbdesc.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbdma.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbkeyboardmap.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbmode.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbringbuf.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbtick.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/usbulpi.c" 
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbbuffer.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbdesc.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbdma.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbkeyboardmap.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbmode.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbringbuf.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbtick.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/usbulpi.c" 
 
 

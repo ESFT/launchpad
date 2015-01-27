@@ -6,4 +6,5 @@
 	<deviceEndianness value="little"/>
 	<codegenToolVersion value="5.0.4"/>
 	<isElfFormat value="true"/>
+	<isTargetManual value="false"/>
 </projectOptions>

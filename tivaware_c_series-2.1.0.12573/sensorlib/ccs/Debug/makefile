@@ -8,36 +8,27 @@ CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
-"./usbbuffer.obj" \
-"./usbdesc.obj" \
-"./usbdma.obj" \
-"./usbkeyboardmap.obj" \
-"./usbmode.obj" \
-"./usbringbuf.obj" \
-"./usbtick.obj" \
-"./usbulpi.obj" \
-"./host/usbhaudio.obj" \
-"./host/usbhhid.obj" \
-"./host/usbhhidkeyboard.obj" \
-"./host/usbhhidmouse.obj" \
-"./host/usbhhub.obj" \
-"./host/usbhmsc.obj" \
-"./host/usbhostenum.obj" \
-"./host/usbhscsi.obj" \
-"./device/usbdaudio.obj" \
-"./device/usbdbulk.obj" \
-"./device/usbdcdc.obj" \
-"./device/usbdcdesc.obj" \
-"./device/usbdcomp.obj" \
-"./device/usbdconfig.obj" \
-"./device/usbddfu-rt.obj" \
-"./device/usbdenum.obj" \
-"./device/usbdhandler.obj" \
-"./device/usbdhid.obj" \
-"./device/usbdhidgamepad.obj" \
-"./device/usbdhidkeyb.obj" \
-"./device/usbdhidmouse.obj" \
-"./device/usbdmsc.obj" \
+"./ak8963.obj" \
+"./ak8975.obj" \
+"./bmp180.obj" \
+"./bq27510g3.obj" \
+"./cm3218.obj" \
+"./comp_dcm.obj" \
+"./i2cm_drv.obj" \
+"./isl29023.obj" \
+"./kxti9.obj" \
+"./l3gd20h.obj" \
+"./lsm303d.obj" \
+"./lsm303dlhc_accel.obj" \
+"./lsm303dlhc_mag.obj" \
+"./magneto.obj" \
+"./mpu6050.obj" \
+"./mpu9150.obj" \
+"./quaternion.obj" \
+"./sht21.obj" \
+"./tmp006.obj" \
+"./tmp100.obj" \
+"./vector.obj" \
 
 -include ../makefile.init
 
@@ -47,11 +38,7 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
--include host/subdir_vars.mk
--include device/subdir_vars.mk
 -include subdir_rules.mk
--include host/subdir_rules.mk
--include device/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -139,28 +126,28 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 LIB_OUTPUTS += \
-usblib.lib \
+sensorlib.lib \
 
 LIB_OUTPUTS__QUOTED += \
-"usblib.lib" \
+"sensorlib.lib" \
 
 
 # All Target
-all: usblib.lib
+all: sensorlib.lib
 
 # Tool invocations
-usblib.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
+sensorlib.lib: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "usblib.lib" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "sensorlib.lib" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(LIB_OUTPUTS__QUOTED)
-	-$(RM) "usbbuffer.pp" "usbdesc.pp" "usbdma.pp" "usbkeyboardmap.pp" "usbmode.pp" "usbringbuf.pp" "usbtick.pp" "usbulpi.pp" "host\usbhaudio.pp" "host\usbhhid.pp" "host\usbhhidkeyboard.pp" "host\usbhhidmouse.pp" "host\usbhhub.pp" "host\usbhmsc.pp" "host\usbhostenum.pp" "host\usbhscsi.pp" "device\usbdaudio.pp" "device\usbdbulk.pp" "device\usbdcdc.pp" "device\usbdcdesc.pp" "device\usbdcomp.pp" "device\usbdconfig.pp" "device\usbddfu-rt.pp" "device\usbdenum.pp" "device\usbdhandler.pp" "device\usbdhid.pp" "device\usbdhidgamepad.pp" "device\usbdhidkeyb.pp" "device\usbdhidmouse.pp" "device\usbdmsc.pp" 
-	-$(RM) "usbbuffer.obj" "usbdesc.obj" "usbdma.obj" "usbkeyboardmap.obj" "usbmode.obj" "usbringbuf.obj" "usbtick.obj" "usbulpi.obj" "host\usbhaudio.obj" "host\usbhhid.obj" "host\usbhhidkeyboard.obj" "host\usbhhidmouse.obj" "host\usbhhub.obj" "host\usbhmsc.obj" "host\usbhostenum.obj" "host\usbhscsi.obj" "device\usbdaudio.obj" "device\usbdbulk.obj" "device\usbdcdc.obj" "device\usbdcdesc.obj" "device\usbdcomp.obj" "device\usbdconfig.obj" "device\usbddfu-rt.obj" "device\usbdenum.obj" "device\usbdhandler.obj" "device\usbdhid.obj" "device\usbdhidgamepad.obj" "device\usbdhidkeyb.obj" "device\usbdhidmouse.obj" "device\usbdmsc.obj" 
+	-$(RM) "ak8963.pp" "ak8975.pp" "bmp180.pp" "bq27510g3.pp" "cm3218.pp" "comp_dcm.pp" "i2cm_drv.pp" "isl29023.pp" "kxti9.pp" "l3gd20h.pp" "lsm303d.pp" "lsm303dlhc_accel.pp" "lsm303dlhc_mag.pp" "magneto.pp" "mpu6050.pp" "mpu9150.pp" "quaternion.pp" "sht21.pp" "tmp006.pp" "tmp100.pp" "vector.pp" 
+	-$(RM) "ak8963.obj" "ak8975.obj" "bmp180.obj" "bq27510g3.obj" "cm3218.obj" "comp_dcm.obj" "i2cm_drv.obj" "isl29023.obj" "kxti9.obj" "l3gd20h.obj" "lsm303d.obj" "lsm303dlhc_accel.obj" "lsm303dlhc_mag.obj" "magneto.obj" "mpu6050.obj" "mpu9150.obj" "quaternion.obj" "sht21.obj" "tmp006.obj" "tmp100.obj" "vector.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

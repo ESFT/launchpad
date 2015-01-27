@@ -4,14 +4,14 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhaudio.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhid.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhidkeyboard.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhidmouse.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhub.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhmsc.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhostenum.c \
-D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhscsi.c 
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhaudio.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhid.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidkeyboard.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidmouse.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhub.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhmsc.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhostenum.c \
+C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhscsi.c 
 
 OBJS += \
 ./host/usbhaudio.obj \
@@ -54,13 +54,13 @@ OBJS__QUOTED += \
 "host\usbhscsi.obj" 
 
 C_SRCS__QUOTED += \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhaudio.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhid.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhidkeyboard.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhidmouse.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhhub.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhmsc.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhostenum.c" \
-"D:/Programs/ti/TivaWare_C_Series-2.1.0.12573/usblib/host/usbhscsi.c" 
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhaudio.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhid.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidkeyboard.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidmouse.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhub.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhmsc.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhostenum.c" \
+"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhscsi.c" 
 
 

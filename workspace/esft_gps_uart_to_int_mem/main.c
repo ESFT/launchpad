@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
+#include "driverlib/adc.h"
 #include "driverlib/debug.h"
 #include "driverlib/fpu.h"
 #include "driverlib/gpio.h"
@@ -157,6 +159,24 @@ main(void) {
   UART_CONFIG_PAR_NONE));
 
 
+  //
+  // Accelerometer
+  //
+
+  //
+  // Configure ADC0 Port E Pin 3 on sequence 3
+  //
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+  GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
+  ADCSequenceDisable(ADC0_BASE, 3);
+  ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
+  ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
+  ADCSequenceEnable(ADC0_BASE, 3);
+  ADCIntEnable(ADC0_BASE, 3);
+  ADCIntClear(ADC0_BASE, 3);
+
+  uint32_t accel[1];
 
   //
   // Loop, writing GPS data to flash while there is free space in flash.
@@ -182,6 +202,7 @@ main(void) {
   // Round to near 4 bytes for flash (88 Bytes = 22 packed uint32_t)
   // Add some padding just in case (128 bytes)
   uint8_t gpsBuffer[128];
+  char accelBuffer[16];
 
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {
@@ -236,6 +257,22 @@ main(void) {
         }
       } //If char == $
     } // main if (Chars avail)
+
+    //
+    // Get data from accelerometer
+    //
+    ADCProcessorTrigger(ADC0_BASE, 3);
+    while(!ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
+        // if stuck in while() unplug lauchpad for 15s to reset
+    ADCIntClear(ADC0_BASE, 3);
+    ADCSequenceDataGet(ADC0_BASE, 3, accel);
+
+    // send accelerometer data over UART for debugging
+    // TODO: save accel data to flash
+    sprintf(accelBuffer, "accel : %d  \n\r", accel[0]);
+    UARTSend((uint8_t *)accelBuffer,16);
+
+
   } // main while end
 
   uint32_t StartAddr = FLASH_STORE_START_ADDR;

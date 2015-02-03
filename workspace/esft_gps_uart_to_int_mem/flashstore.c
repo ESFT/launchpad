@@ -121,7 +121,7 @@ FlashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
        (ui32StartAddr < FLASH_STORE_END_ADDR))
     {
         g_ui32StoreAddr = ui32StartAddr;
-        return(1);
+        return 1;
     }
 
     //
@@ -245,7 +245,7 @@ FlashStoreWriteRecord(uint8_t *record, int size)
   //
   // Return success indication to caller.
   //
-  return(1);
+  return 1;
 }
 
 //*****************************************************************************
@@ -295,7 +295,7 @@ IsBlockFree(uint32_t ui32BaseAddr)
             // Found a non-blank location, so return indication that block
             // is not free.
             //
-            return(0);
+            return 0;
         }
     }
 
@@ -303,7 +303,7 @@ IsBlockFree(uint32_t ui32BaseAddr)
     // If we made it to here then every location in this block is erased,
     // so return indication that the block is free.
     //
-    return(1);
+    return 1;
 }
 
 //*****************************************************************************
@@ -367,7 +367,7 @@ FlashStoreUsed(void)
 uint32_t
 FlashStoreGetCurrentAddr(void)
 {
-    return(g_ui32StoreAddr);
+    return g_ui32StoreAddr;
 }
 
 //*****************************************************************************
@@ -389,5 +389,5 @@ FlashStoreSetCurrentAddr(uint32_t newAddr)
 uint32_t
 FlashStoreGetData(uint32_t Addr)
 {
-  return (HWREG(Addr));
+  return HWREG(Addr);
 }

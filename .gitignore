@@ -1,7 +1,6 @@
 # Assembled binaries and object directories
 obj/
 
-
 # Object files
 *.o
 *.ko
@@ -33,3 +32,4 @@ obj/
 # Other
 *.mk
 *.map
+desktop.ini

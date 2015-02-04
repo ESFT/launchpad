@@ -1,0 +1,1 @@
+"./flashstore.obj" "./main.obj" "./tm4c123gh6pm_startup_ccs.obj" "../tm4c123gh6pm.cmd" -l"libc.a" -l"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/workspace/esft_peripheral_data_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" 

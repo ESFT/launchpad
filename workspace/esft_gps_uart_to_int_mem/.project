@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>esft_gps_uart_to_int_mem</name>
+	<name>esft_peripheral_data_to_int_mem</name>
 	<comment></comment>
 	<projects>
 		<project>driverlib</project>

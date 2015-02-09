@@ -342,22 +342,27 @@ main(void) {
     // TODO: fix code to read from altimeter
     //
     I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
+    
+    // tell altimeter to begin conversion
     I2CMasterDataPut(I2C0_BASE, ALT_D1_256);
     I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
     while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
     while( ROM_I2CMasterBusy(I2C0_BASE) ){}
     
+    // tell altimeter to send data to launchpad
     I2CMasterDataPut(I2C0_BASE, ALT_ADC_READ);
     I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, true);
     I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
     while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
     while(I2CMasterBusy(I2C0_BASE)) {}
-    altData = I2CSlaveDataGet(I2C0_BASE); // TODO: returns 0, not retrieving data from altimeter
+    altData = I2CMasterDataGet(I2C0_BASE); // returns FF
     
     // send altimeter data over UART for debugging
     // TODO: save alt data to flash
-    sprintf(altBuffer, "alt : %d  \n\r", altData);
+    sprintf(altBuffer, "alt : %x  \n\r", altData);
     UARTSend((uint8_t *)altBuffer,16);   
+    
+    SysCtlDelay(1000000); // wait some time to not spam putty (DEBUG)
     
     LEDBlink(); // blink led to verify code is running for debugging without flash write
     

@@ -26,19 +26,11 @@ __error__(char *pcFilename, uint32_t ui32Line)
 }
 #endif
 
-void
-LEDInit(void) {
-  //
-  // Enable the GPIO port that is used for the on-board LED.
-  //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-
-  //
-  // Enable the GPIO pins for the LED (PF2).
-  //
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
-}
-
+//*****************************************************************************
+//
+// LED functions
+//
+//*****************************************************************************
 void
 LEDOn(void)
 {
@@ -61,59 +53,29 @@ LEDBlink(void) {
 
 //*****************************************************************************
 //
-// Send a string to the UART.
+// Initialize Peripherals
 //
 //*****************************************************************************
 void
-UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count)
-{
-    //
-    // Loop while there are more characters to send.
-    //
-    while(ui32Count--)
-    {
-        //
-        // Write the next character to the UART.
-        //
-        UARTCharPut(UART0_BASE, *pui8Buffer++);
-    }
+LEDInit(void) {
+  //
+  // Enable the GPIO port that is used for the on-board LED.
+  //
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
+  //
+  // Enable the GPIO pins for the LED (PF2).
+  //
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
 }
 
-int
-main(void) {
+void
+consoleInit(void) {
   //
-  // Enable lazy stacking for interrupt handlers.  This allows floating-point
-  // instructions to be used within interrupt handlers, but at the expense of
-  // extra stack usage.
+  // Enable the peripherals used by the console.
   //
-  FPUEnable();
-  FPULazyStackingEnable();
-
-  //
-  // Set the clocking to run directly from the crystal.
-  //
-  SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
-                 SYSCTL_XTAL_16MHZ);
-
-  // Enable the LED
-  LEDInit();
-
-  //
-  // Enable the peripherals used by this example.
-  //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0); // GPS
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); // Console
-
-  //
-  // Enable processor interrupts.
-  //
-  IntMasterEnable();
-
-
-  //
-  // CONSOLE
-  //
-
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+  
   //
   // Set GPIO A0 and A1 as UART pins for console interface
   //
@@ -133,12 +95,16 @@ main(void) {
   //
   IntEnable(INT_UART0);
   UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+  
+}
 
-
+void
+GPSInit(void) {
   //
-  // GPS
+  // Enable the peripherals used by the GPS.
   //
-
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+  
   //
   // Enable the peripherals used by this example.
   //
@@ -157,12 +123,11 @@ main(void) {
   UARTConfigSetExpClk(UART4_BASE, SysCtlClockGet(), 9600,
   (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
   UART_CONFIG_PAR_NONE));
+  
+}
 
-
-  //
-  // Accelerometer
-  //
-
+void
+accelInit(void) {
   //
   // Configure ADC0 Port E Pin 3 on sequence 3
   //
@@ -176,7 +141,64 @@ main(void) {
   ADCIntEnable(ADC0_BASE, 3);
   ADCIntClear(ADC0_BASE, 3);
 
-  uint32_t accel[1];
+}
+
+//*****************************************************************************
+//
+// Send a string to the UART.
+//
+//*****************************************************************************
+void
+UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count)
+{
+    //
+    // Loop while there are more characters to send.
+    //
+    while(ui32Count--)
+    {
+        //
+        // Write the next character to the UART.
+        //
+        UARTCharPut(UART0_BASE, *pui8Buffer++);
+    }
+}
+
+//*****************************************************************************
+//
+// Main function
+//
+//*****************************************************************************
+int
+main(void) {
+  //
+  // Enable lazy stacking for interrupt handlers.
+  //
+  FPUEnable();
+  FPULazyStackingEnable();
+
+  //
+  // Set the clocking to run directly from the crystal.
+  //
+  SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+                 SYSCTL_XTAL_16MHZ);
+
+  // Enable the LED
+  LEDInit();
+  
+  // Enable the Console
+  consoleInit();
+
+  // Enable the GPS
+  GPSInit();
+  
+  // Enable the accelerometer
+  accelInit();
+
+  // Enable processor interrupts.
+  IntMasterEnable();
+
+
+
 
   //
   // Loop, writing GPS data to flash while there is free space in flash.
@@ -202,7 +224,10 @@ main(void) {
   // Round to near 4 bytes for flash (88 Bytes = 22 packed uint32_t)
   // Add some padding just in case (128 bytes)
   uint8_t gpsBuffer[128];
+  
+  // accelerometer
   char accelBuffer[16];
+  uint32_t accel[1];
 
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {

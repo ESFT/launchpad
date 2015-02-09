@@ -15,7 +15,7 @@
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
-#include "flashstore.h"
+#include "flashStore.h"
 #include "altimetercommands.c"
 
 //*****************************************************************************
@@ -30,29 +30,34 @@ __error__(char *pcFilename, uint32_t ui32Line)
 }
 #endif
 
+#define RED_LED GPIO_PIN_1
+#define GREEN_LED GPIO_PIN_2
+#define BLUE_LED GPIO_PIN_3
+
+
 //*****************************************************************************
 //
 // LED functions
 //
 //*****************************************************************************
 void
-LEDOn(void)
+LEDOn(uint8_t color)
 {
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+    GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, RED_LED);
 }
 
 void
-LEDOff(void)
+LEDOff(uint8_t color)
 {
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
+	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
 }
 
 void
-LEDBlink(void) {
-    LEDOn();
+LEDBlink(uint8_t color) {
+    LEDOn(color);
     // Delay for 1 millisecond. Each SysCtlDelay is about 3 clocks.
     SysCtlDelay(SysCtlClockGet() / (1000 * 3));
-    LEDOff();
+    LEDOff(color);
 }
 
 //*****************************************************************************
@@ -68,9 +73,11 @@ LEDInit(void) {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
   //
-  // Enable the GPIO pins for the LED (PF2).
+  // Enable the GPIO pins for the RGB LED.
   //
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED); // Red
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED); // Blue
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, BLUE_LED); // Green
 }
 
 void
@@ -78,8 +85,9 @@ consoleInit(void) {
   //
   // Enable the peripherals used by the console.
   //
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-  
+
   //
   // Set GPIO A0 and A1 as UART pins for console interface
   //
@@ -93,24 +101,18 @@ consoleInit(void) {
   UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
                       (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                        UART_CONFIG_PAR_NONE));
-					   
+
   //
-  // Enable the UART interrupt
+  // Enable the UART0 interrupts
   //
   IntEnable(INT_UART0);
   UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-  
 }
 
 void
-GPSInit(void) {
+gpsInit(void) {
   //
   // Enable the peripherals used by the GPS.
-  //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-  
-  //
-  // Enable the peripherals used by this example.
   //
   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -125,55 +127,72 @@ GPSInit(void) {
   // Configure the UART for 9600, 8-N-1 operation.
   //
   UARTConfigSetExpClk(UART4_BASE, SysCtlClockGet(), 9600,
-  (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-  UART_CONFIG_PAR_NONE));
-  
+                      (UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE |
+                       UART_CONFIG_STOP_ONE));
 }
 
 void
 accelInit(void) {
   //
-  // Configure ADC0 Port E Pin 3 on sequence 3
+  // Enable the peripherals used by the accelerometer
   //
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+
+  //
+  // Configure GPIO PE3 as ADC0 for accelerometer
+  //
   GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
+
+  //
+  // Configure ADC0 on sequence 3
+  //
   ADCSequenceDisable(ADC0_BASE, 3);
   ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
   ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
   ADCSequenceEnable(ADC0_BASE, 3);
+
+  // Enable ADC Interupts
   ADCIntEnable(ADC0_BASE, 3);
   ADCIntClear(ADC0_BASE, 3);
-
 }
 
 void
 altInit(void) {
-  //
-  // Configure I2C0 Port B SCL Pin 2 SDA Pin 3
-  //
+
   SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-  
+
+  //
+  // Configure GPIO PB2 as I2C0 SCL
+  //
   GPIOPinConfigure(GPIO_PB2_I2C0SCL);
-  GPIOPinConfigure(GPIO_PB3_I2C0SDA);
-  
   GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
+
+  //
+  // Configure GPIO PB3 as I2C0 SDA
+  //
+  GPIOPinConfigure(GPIO_PB3_I2C0SDA);
   GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
-  
-  //false = 100kbps, true = 400kbps
-  I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false);
-  
+
+  //
+  // Configure IC20 for 100kbps.
+  //
+  I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false); //false = 100kbps, true = 400kbps
+
+  //
+  // Enable IC2 Master Block
+  //
   I2CMasterEnable(I2C0_BASE);
-  
+
   //false = writing to slave, true = reading from slave
   I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
-  
+
   // reset altimeter
  // I2CMasterDataPut(I2C0_BASE, ALT_RESET); //place data to be sent in register
  // I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND); //send command
  // while(I2CMasterBusy(I2C0_BASE)) {} //wait until slave gets command
-  
+
 }
 
 //*****************************************************************************
@@ -215,52 +234,47 @@ main(void) {
   SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                  SYSCTL_XTAL_16MHZ);
 
+
+  ///////////////////Initialize//////////////////////////////
+
   // Enable the LED
   LEDInit();
-  
+
   // Enable the Console
   consoleInit();
 
   // Enable the GPS
-  GPSInit();
-  
+  gpsInit();
+
   // Enable the accelerometer
   accelInit();
-  
-  //
+
+  // Enable the altimeter
   altInit();
+
+  // Enable flash storage
+  uint32_t FreeSpaceAvailable = flashStoreInit();
 
   // Enable processor interrupts.
   IntMasterEnable();
 
 
-
-
-  //
-  // Loop, writing GPS data to flash while there is free space in flash.
-  //
-
-  ///////////////////Initialize//////////////////////////////
-
-  //
-  // Initiate Flash Storage.
-  //
-  uint32_t FreeSpaceAvailable = FlashStoreInit();
-
   uint8_t command[5] = {'G','P','G','G','A'}, newChar;
   uint32_t gpsBufferIndex, i;
-  uint32_t match, noStar; // booleans
+  uint32_t gpsMatch, gpsNoStar; // booleans
 
-  // GPS throws max of 87 chars (TextCRLF) ( 87 chars = 87 bytes )
-  // $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRR*CC<CR><LF>
-  // Strip *CC<CR><LF>            ( 87 - 5 = 82 chars = 82 bytes )
-  // $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRR
-  // Add 6 chars for HAM callsign ( 82 + 6 = 88 chars = 88 bytes )
-  // $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRRKR0KCT
-  // Round to near 4 bytes for flash (88 Bytes = 22 packed uint32_t)
-  // Add some padding just in case (128 bytes)
+  /*
+   GPS throws max of 87 chars (TextCRLF) ( 87 chars = 87 bytes )
+   $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRR*CC<CR><LF>
+   Strip *CC<CR><LF>            ( 87 - 5 = 82 chars = 82 bytes )
+   $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRR
+   Add 6 chars for HAM callsign ( 82 + 6 = 88 chars = 88 bytes )
+   $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRRKR0KCT
+   Round to near 4 bytes for flash (88 Bytes = 22 packed uint32_t)
+   Add some padding just in case (128 bytes)
+  */
   uint8_t gpsBuffer[128];
-  
+
   // accelerometer
   char accelBuffer[16];
   uint32_t accel[1];
@@ -268,7 +282,7 @@ main(void) {
   // altimeter
   char altBuffer[16];
   int altData;
-  
+
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {
     if (UARTCharsAvail(UART4_BASE)) { //find out if GPS has sent data
@@ -279,7 +293,7 @@ main(void) {
         gpsBufferIndex = 0; //start gpsBuffer[] at zero
         gpsBuffer[gpsBufferIndex] = newChar; gpsBufferIndex++; // Add $ as delimiter
 
-        match = 1; // Assume match is true. Check in next loop.
+        gpsMatch = 1; // Assume match is true. Check in next loop.
 
         for (i = 0; i < 5; i++) {
           newChar = UARTCharGet(UART4_BASE); // collect the next five characters
@@ -288,20 +302,20 @@ main(void) {
             gpsBuffer[gpsBufferIndex] = newChar; gpsBufferIndex++;
           }
           else {
-            match = 0; // Assumption was wrong. Break and retry.
+            gpsMatch = 0; // Assumption was wrong. Break and retry.
             break;
           }
         }
 
         //if the opening string matched "GPGGA", start processing the data feed
-        if (match) {
+        if (gpsMatch) {
 
-          noStar = 1; //while asterisk is not found
+          gpsNoStar = 1; //while asterisk is not found
 
-          while (noStar) {
+          while (gpsNoStar) {
         	newChar = UARTCharGet(UART4_BASE); // collect the next five characters
             if (newChar == '*') {
-              noStar = 0; //if asterisk is found
+              gpsNoStar = 0; //if asterisk is found
             } else {
               gpsBuffer[gpsBufferIndex] = newChar; gpsBufferIndex++;
             }
@@ -317,8 +331,8 @@ main(void) {
           gpsBuffer[gpsBufferIndex] = 'T'; gpsBufferIndex++;
 
           // Write Buffer to Flash
-          LEDBlink();
-          FreeSpaceAvailable = FlashStoreWriteRecord(&gpsBuffer[0], gpsBufferIndex);
+          LEDBlink(RED_LED);
+          FreeSpaceAvailable = flashStoreWriteRecord(&gpsBuffer[0], gpsBufferIndex);
         }
       } //If char == $
     } // main if (Chars avail)
@@ -336,19 +350,19 @@ main(void) {
     // TODO: save accel data to flash
     sprintf(accelBuffer, "accel : %d  \n\r", accel[0]);
     UARTSend((uint8_t *)accelBuffer,16);
-    
+
     //
     // Get data from altimeter
     // TODO: fix code to read from altimeter
     //
     I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
-    
+
     // tell altimeter to begin conversion
     I2CMasterDataPut(I2C0_BASE, ALT_D1_256);
     I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
     while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
     while( ROM_I2CMasterBusy(I2C0_BASE) ){}
-    
+
     // tell altimeter to send data to launchpad
     I2CMasterDataPut(I2C0_BASE, ALT_ADC_READ);
     I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, true);
@@ -356,16 +370,16 @@ main(void) {
     while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
     while(I2CMasterBusy(I2C0_BASE)) {}
     altData = I2CMasterDataGet(I2C0_BASE); // returns FF
-    
+
     // send altimeter data over UART for debugging
     // TODO: save alt data to flash
     sprintf(altBuffer, "alt : %x  \n\r", altData);
-    UARTSend((uint8_t *)altBuffer,16);   
-    
+    UARTSend((uint8_t *)altBuffer,16);
+
     SysCtlDelay(1000000); // wait some time to not spam putty (DEBUG)
-    
-    LEDBlink(); // blink led to verify code is running for debugging without flash write
-    
+
+    LEDBlink(BLUE_LED); // blink blue led to verify code is running for debugging without flash write
+
 
   } // main while end
 
@@ -375,16 +389,16 @@ main(void) {
   uint32_t Header = FLASH_STORE_RECORD_HEADER;
   uint32_t packed_char, recordSize;
 
-  LEDOn();
+  LEDOn(RED_LED);
 
   while (1)
   {
-    packed_char = FlashStoreGetData(CurrAddr);
+    packed_char = flashStoreGetData(CurrAddr);
     if((packed_char & 0xFFFFFF00) == Header) {
       recordSize = packed_char & 0xFF;
       for (i=0; i < (recordSize - 0x04) / 4; i++) {
         CurrAddr += 0x04;
-        packed_char = FlashStoreGetData(CurrAddr);
+        packed_char = flashStoreGetData(CurrAddr);
         UARTCharPut(UART0_BASE, unpack_c0(packed_char));
         UARTCharPut(UART0_BASE, unpack_c1(packed_char));
         UARTCharPut(UART0_BASE, unpack_c2(packed_char));

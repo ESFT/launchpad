@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-// flashstore.c - Data logger module to handle storage in flash.
+// flashStore.c - Data logger module to handle storage in flash.
 //
 // Copyright (c) 2011-2014 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
@@ -28,7 +28,7 @@
 #include "inc/hw_types.h"
 #include "driverlib/debug.h"
 #include "driverlib/flash.h"
-#include "flashstore.h"
+#include "flashStore.h"
 
 //*****************************************************************************
 //
@@ -92,9 +92,9 @@ unpack_c3(uint32_t p)
 //
 //*****************************************************************************
 int32_t
-FlashStoreInit(void)
+flashStoreInit(void)
 {
-  return FlashStoreNewLogFile(0x0, 0);
+  return flashStoreNewLogFile(0x0, 0);
 }
 
 //*****************************************************************************
@@ -109,7 +109,7 @@ FlashStoreInit(void)
 //
 //*****************************************************************************
 int32_t
-FlashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
+flashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
 {
     uint32_t ui32Addr;
 
@@ -199,7 +199,7 @@ FlashStoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
 //
 //*****************************************************************************
 int32_t
-FlashStoreWriteRecord(uint8_t *record, int size)
+flashStoreWriteRecord(uint8_t *record, int size)
 {
   if (g_ui32StoreAddr >= FLASH_STORE_END_ADDR)
   {
@@ -254,7 +254,7 @@ FlashStoreWriteRecord(uint8_t *record, int size)
 //
 //*****************************************************************************
 void
-FlashStoreErase(void)
+flashStoreErase(void)
 {
     uint32_t ui32Addr;
 
@@ -312,7 +312,7 @@ IsBlockFree(uint32_t ui32BaseAddr)
 //
 //*****************************************************************************
 int32_t
-FlashStoreFree(void)
+flashStoreFree(void)
 {
     uint32_t ui32Addr, ui32FreeBlocks = 0;
 
@@ -338,7 +338,7 @@ FlashStoreFree(void)
 //
 //*****************************************************************************
 int32_t
-FlashStoreUsed(void)
+flashStoreUsed(void)
 {
     uint32_t ui32Addr, ui32UsedBlocks = 0;
 
@@ -365,7 +365,7 @@ FlashStoreUsed(void)
 //
 //*****************************************************************************
 uint32_t
-FlashStoreGetCurrentAddr(void)
+flashStoreGetCurrentAddr(void)
 {
     return g_ui32StoreAddr;
 }
@@ -376,7 +376,7 @@ FlashStoreGetCurrentAddr(void)
 //
 //*****************************************************************************
 void
-FlashStoreSetCurrentAddr(uint32_t newAddr)
+flashStoreSetCurrentAddr(uint32_t newAddr)
 {
   g_ui32StoreAddr = newAddr;
 }
@@ -387,7 +387,7 @@ FlashStoreSetCurrentAddr(uint32_t newAddr)
 //
 //*****************************************************************************
 uint32_t
-FlashStoreGetData(uint32_t Addr)
+flashStoreGetData(uint32_t Addr)
 {
   return HWREG(Addr);
 }

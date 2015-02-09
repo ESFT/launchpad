@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-// flashstore.h - Prototypes and definitions for flash storage module.
+// flashStore.h - Prototypes and definitions for flash storage module.
 //
 // Copyright (c) 2011-2014 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
@@ -21,8 +21,8 @@
 // This is part of revision 2.1.0.12573 of the DK-TM4C123G Firmware Package.
 //
 //*****************************************************************************
-#ifndef __FLASHSTORE_H__
-#define __FLASHSTORE_H__
+#ifndef __flashStore_H__
+#define __flashStore_H__
 
 //*****************************************************************************
 //
@@ -88,17 +88,17 @@ extern uint8_t  unpack_c0(uint32_t);
 extern uint8_t  unpack_c1(uint32_t);
 extern uint8_t  unpack_c2(uint32_t);
 extern uint8_t  unpack_c3(uint32_t);
-extern int32_t  FlashStoreInit(void);
-extern int32_t  FlashStoreNewLogFile(uint32_t ui32StartAddr, int);
-extern int32_t  FlashStoreWriteRecord(uint8_t *, int);
-extern int32_t  FlashStoreSave(void);
-extern void     FlashStoreErase(void);
+extern int32_t  flashStoreInit(void);
+extern int32_t  flashStoreNewLogFile(uint32_t ui32StartAddr, int);
+extern int32_t  flashStoreWriteRecord(uint8_t *, int);
+extern int32_t  flashStoreSave(void);
+extern void     flashStoreErase(void);
 static int32_t  IsBlockFree(uint32_t ui32BaseAddr);
-extern int32_t  FlashStoreFree(void);
-extern int32_t  FlashStoreUsed(void);
-extern uint32_t FlashStoreGetData(uint32_t);
-extern uint32_t FlashStoreGetCurrentAddr(void);
-extern void     FlashStoreSetCurrentAddr(uint32_t);
+extern int32_t  flashStoreFree(void);
+extern int32_t  flashStoreUsed(void);
+extern uint32_t flashStoreGetData(uint32_t);
+extern uint32_t flashStoreGetCurrentAddr(void);
+extern void     flashStoreSetCurrentAddr(uint32_t);
 
 //*****************************************************************************
 //
@@ -109,4 +109,4 @@ extern void     FlashStoreSetCurrentAddr(uint32_t);
 }
 #endif
 
-#endif // __FLASHSTORE_H__
+#endif // __flashStore_H__

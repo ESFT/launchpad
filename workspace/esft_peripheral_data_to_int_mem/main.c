@@ -1,18 +1,22 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "inc/hw_i2c.h"
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
 #include "driverlib/adc.h"
 #include "driverlib/debug.h"
 #include "driverlib/fpu.h"
 #include "driverlib/gpio.h"
+#include "driverlib/i2c.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
 #include "flashstore.h"
+#include "altimetercommands.c"
 
 //*****************************************************************************
 //
@@ -143,6 +147,35 @@ accelInit(void) {
 
 }
 
+void
+altInit(void) {
+  //
+  // Configure I2C0 Port B SCL Pin 2 SDA Pin 3
+  //
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+  
+  GPIOPinConfigure(GPIO_PB2_I2C0SCL);
+  GPIOPinConfigure(GPIO_PB3_I2C0SDA);
+  
+  GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
+  GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
+  
+  //false = 100kbps, true = 400kbps
+  I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false);
+  
+  I2CMasterEnable(I2C0_BASE);
+  
+  //false = writing to slave, true = reading from slave
+  I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
+  
+  // reset altimeter
+ // I2CMasterDataPut(I2C0_BASE, ALT_RESET); //place data to be sent in register
+ // I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND); //send command
+ // while(I2CMasterBusy(I2C0_BASE)) {} //wait until slave gets command
+  
+}
+
 //*****************************************************************************
 //
 // Send a string to the UART.
@@ -193,6 +226,9 @@ main(void) {
   
   // Enable the accelerometer
   accelInit();
+  
+  //
+  altInit();
 
   // Enable processor interrupts.
   IntMasterEnable();
@@ -228,7 +264,7 @@ main(void) {
   // accelerometer
   char accelBuffer[16];
   uint32_t accel[1];
-
+  
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {
     if (UARTCharsAvail(UART4_BASE)) { //find out if GPS has sent data
@@ -296,7 +332,7 @@ main(void) {
     // TODO: save accel data to flash
     sprintf(accelBuffer, "accel : %d  \n\r", accel[0]);
     UARTSend((uint8_t *)accelBuffer,16);
-
+    
 
   } // main while end
 

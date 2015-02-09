@@ -264,6 +264,10 @@ main(void) {
   // accelerometer
   char accelBuffer[16];
   uint32_t accel[1];
+
+  // altimeter
+  char altBuffer[16];
+  int altData;
   
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {
@@ -332,6 +336,30 @@ main(void) {
     // TODO: save accel data to flash
     sprintf(accelBuffer, "accel : %d  \n\r", accel[0]);
     UARTSend((uint8_t *)accelBuffer,16);
+    
+    //
+    // Get data from altimeter
+    // TODO: fix code to read from altimeter
+    //
+    I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
+    I2CMasterDataPut(I2C0_BASE, ALT_D1_256);
+    I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+    while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
+    while( ROM_I2CMasterBusy(I2C0_BASE) ){}
+    
+    I2CMasterDataPut(I2C0_BASE, ALT_ADC_READ);
+    I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, true);
+    I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+    while(!( ROM_I2CMasterBusy(I2C0_BASE) )){}
+    while(I2CMasterBusy(I2C0_BASE)) {}
+    altData = I2CSlaveDataGet(I2C0_BASE); // TODO: returns 0, not retrieving data from altimeter
+    
+    // send altimeter data over UART for debugging
+    // TODO: save alt data to flash
+    sprintf(altBuffer, "alt : %d  \n\r", altData);
+    UARTSend((uint8_t *)altBuffer,16);   
+    
+    LEDBlink(); // blink led to verify code is running for debugging without flash write
     
 
   } // main while end

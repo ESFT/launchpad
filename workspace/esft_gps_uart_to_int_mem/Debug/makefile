@@ -13,7 +13,7 @@ $(GEN_CMDS__FLAG) \
 "./tm4c123gh6pm_startup_ccs.obj" \
 "../tm4c123gh6pm.cmd" \
 -l"libc.a" \
--l"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/workspace/esft_gps_uart_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Debug\driverlib.lib" \
+-l"D:/Code/git_repo/esft/launchpad/workspace/esft_gps_uart_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Debug\driverlib.lib" \
 
 -include ../makefile.init
 
@@ -127,13 +127,13 @@ BIN_OUTPUTS__QUOTED += \
 all: esft_gps_uart_to_int_mem.out
 
 dependents:
-	-cd C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
+	-cd D:/Code/git_repo/esft/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
 
 # Tool invocations
-esft_gps_uart_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib
+esft_gps_uart_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/esft/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_gps_uart_to_int_mem.map" --heap_size=0 --stack_size=512 -i"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_gps_uart_to_int_mem_linkInfo.xml" --rom_model -o "esft_gps_uart_to_int_mem.out" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_gps_uart_to_int_mem.map" --heap_size=0 --stack_size=512 -i"D:/Code/git_repo/esft/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_gps_uart_to_int_mem_linkInfo.xml" --rom_model -o "esft_gps_uart_to_int_mem.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	@$(MAKE) --no-print-directory post-build
@@ -158,7 +158,7 @@ post-build:
 
 .PHONY: all clean dependents
 .SECONDARY: post-build
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib:
+D:/Code/git_repo/esft/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib:
 
 -include ../makefile.targets
 

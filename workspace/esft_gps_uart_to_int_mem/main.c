@@ -1,3 +1,5 @@
+#define TARGET_IS_TM4C123_RA1
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -10,6 +12,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
+#include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
 #include "flashstore.h"
@@ -26,36 +29,37 @@ __error__(char *pcFilename, uint32_t ui32Line)
 }
 #endif
 
+
 void
 LEDInit(void) {
   //
   // Enable the GPIO port that is used for the on-board LED.
   //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
   //
   // Enable the GPIO pins for the LED (PF2).
   //
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+  ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
 }
 
 void
 LEDOn(void)
 {
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+    ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
 }
 
 void
 LEDOff(void)
 {
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
+	ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
 }
 
 void
 LEDBlink(void) {
     LEDOn();
     // Delay for 1 millisecond. Each SysCtlDelay is about 3 clocks.
-    SysCtlDelay(SysCtlClockGet() / (1000 * 3));
+    ROM_SysCtlDelay(ROM_SysCtlClockGet() / (1000 * 3));
     LEDOff();
 }
 
@@ -75,7 +79,7 @@ UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count)
         //
         // Write the next character to the UART.
         //
-        UARTCharPut(UART0_BASE, *pui8Buffer++);
+        ROM_UARTCharPut(UART0_BASE, *pui8Buffer++);
     }
 }
 
@@ -86,13 +90,13 @@ main(void) {
   // instructions to be used within interrupt handlers, but at the expense of
   // extra stack usage.
   //
-  FPUEnable();
-  FPULazyStackingEnable();
+  ROM_FPUEnable();
+  ROM_FPULazyStackingEnable();
 
   //
   // Set the clocking to run directly from the crystal.
   //
-  SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+  ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                  SYSCTL_XTAL_16MHZ);
 
   // Enable the LED
@@ -101,14 +105,13 @@ main(void) {
   //
   // Enable the peripherals used by this example.
   //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0); // GPS
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); // Console
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0); // GPS
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); // Console
 
   //
   // Enable processor interrupts.
   //
-  IntMasterEnable();
-
+  ROM_IntMasterEnable();
 
   //
   // CONSOLE
@@ -117,22 +120,22 @@ main(void) {
   //
   // Set GPIO A0 and A1 as UART pins for console interface
   //
-  GPIOPinConfigure(GPIO_PA0_U0RX);
-  GPIOPinConfigure(GPIO_PA1_U0TX);
-  GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+  ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
+  ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
+  ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
   //
   // Configure the UART for 115,200, 8-N-1 operation.
   //
-  UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
-                      (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                       UART_CONFIG_PAR_NONE));
+  ROM_UARTConfigSetExpClk(UART0_BASE, ROM_SysCtlClockGet(), 115200,
+                          (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                           UART_CONFIG_PAR_NONE));
 
   //
   // Enable the UART interrupt
   //
-  IntEnable(INT_UART0);
-  UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+  ROM_IntEnable(INT_UART0);
+  ROM_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
 
 
   //
@@ -142,21 +145,21 @@ main(void) {
   //
   // Enable the peripherals used by this example.
   //
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
 
   //
   // Set GPIO PC4 as U4RX for GPS interface
   //
-  GPIOPinConfigure(GPIO_PC4_U4RX);
-  GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4);
+  ROM_GPIOPinConfigure(GPIO_PC4_U4RX);
+  ROM_GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4);
 
   //
   // Configure the UART for 9600, 8-N-1 operation.
   //
-  UARTConfigSetExpClk(UART4_BASE, SysCtlClockGet(), 9600,
-  (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-  UART_CONFIG_PAR_NONE));
+  ROM_UARTConfigSetExpClk(UART4_BASE, SysCtlClockGet(), 9600,
+                          (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                           UART_CONFIG_PAR_NONE));
 
   //
   // Loop, writing GPS data to flash while there is free space in flash.
@@ -185,9 +188,9 @@ main(void) {
 
   //////////////////////////////////////////////////////////
   while(FreeSpaceAvailable) {
-    if (UARTCharsAvail(UART4_BASE)) { //find out if GPS has sent data
+    if (ROM_UARTCharsAvail(UART4_BASE)) { //find out if GPS has sent data
 
-      newChar = UARTCharGet(UART4_BASE);
+      newChar = ROM_UARTCharGet(UART4_BASE);
       if ( newChar == '$') { // find start of a string of info
 
         gpsBufferIndex = 0; //start gpsBuffer[] at zero
@@ -196,7 +199,7 @@ main(void) {
         match = 1; // Assume match is true. Check in next loop.
 
         for (i = 0; i < 5; i++) {
-          newChar = UARTCharGet(UART4_BASE); // collect the next five characters
+          newChar = ROM_UARTCharGet(UART4_BASE); // collect the next five characters
 
           if (newChar == command[i]) { // validate init match assumption
             gpsBuffer[gpsBufferIndex] = newChar; gpsBufferIndex++;
@@ -213,7 +216,7 @@ main(void) {
           noStar = 1; //while asterisk is not found
 
           while (noStar) {
-        	newChar = UARTCharGet(UART4_BASE); // collect the next five characters
+        	newChar = ROM_UARTCharGet(UART4_BASE); // collect the next five characters
             if (newChar == '*') {
               noStar = 0; //if asterisk is found
             } else {
@@ -254,13 +257,13 @@ main(void) {
       for (i=0; i < (recordSize - 0x04) / 4; i++) {
         CurrAddr += 0x04;
         packed_char = FlashStoreGetData(CurrAddr);
-        UARTCharPut(UART0_BASE, unpack_c0(packed_char));
-        UARTCharPut(UART0_BASE, unpack_c1(packed_char));
-        UARTCharPut(UART0_BASE, unpack_c2(packed_char));
-        UARTCharPut(UART0_BASE, unpack_c3(packed_char));
+        ROM_UARTCharPut(UART0_BASE, unpack_c0(packed_char));
+        ROM_UARTCharPut(UART0_BASE, unpack_c1(packed_char));
+        ROM_UARTCharPut(UART0_BASE, unpack_c2(packed_char));
+        ROM_UARTCharPut(UART0_BASE, unpack_c3(packed_char));
       }
-      UARTCharPut(UART0_BASE, '\r');
-      UARTCharPut(UART0_BASE, '\n');
+      ROM_UARTCharPut(UART0_BASE, '\r');
+      ROM_UARTCharPut(UART0_BASE, '\n');
     }
     else {
       CurrAddr += 0x04;
@@ -269,9 +272,9 @@ main(void) {
     if (CurrAddr >= EndAddr)
     {
       CurrAddr = StartAddr;
-      UARTCharPut(UART0_BASE, '*');
-      UARTCharPut(UART0_BASE, '\r');
-      UARTCharPut(UART0_BASE, '\n');
+      ROM_UARTCharPut(UART0_BASE, '*');
+      ROM_UARTCharPut(UART0_BASE, '\r');
+      ROM_UARTCharPut(UART0_BASE, '\n');
     }
   }
 }

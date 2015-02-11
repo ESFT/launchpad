@@ -21,8 +21,8 @@
 // This is part of revision 2.1.0.12573 of the DK-TM4C123G Firmware Package.
 //
 //*****************************************************************************
-#ifndef __flashStore_H__
-#define __flashStore_H__
+#ifndef __FLASHSTORE_H__
+#define __FLASHSTORE_H__
 
 //*****************************************************************************
 //
@@ -45,7 +45,7 @@ extern "C"
 // storage.
 //
 //*****************************************************************************
-#define FLASH_STORE_START_ADDR  0x10000
+#define FLASH_STORE_START_ADDR  0x30000
 #define FLASH_STORE_END_ADDR    0x40000
 
 //*****************************************************************************

@@ -35,8 +35,8 @@
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 
 // I2C
-#define I2C_WRITE_MODE false
-#define I2C_READ_MODE true
+#define I2C_MODE_WRITE false
+#define I2C_MODE_READ true
 #define I2C_SPEED_100 false
 #define I2C_SPEED_400 true
 
@@ -80,8 +80,7 @@ uint32_t I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize);
 //*****************************************************************************
 #ifdef DEBUG
 void
-__error__(char *pcFilename, uint32_t ui32Line)
-{
+__error__(char *pcFilename, uint32_t ui32Line) {
   UARTprintf("Error at line %d of %s\n", ui32Line, pcFilename);
   while(true) {
     LEDBlink(RED_LED, 250);
@@ -89,9 +88,9 @@ __error__(char *pcFilename, uint32_t ui32Line)
     LEDBlink(WHITE_LED, 250);
   };
 }
+
 static tBoolean
-I2CMasterBaseValid(uint32_t I2C0_BASE)
-{
+I2CMasterBaseValid(uint32_t I2C0_BASE) {
   return( (I2C0_BASE == I2C0_MASTER_BASE) || (I2C0_BASE == I2C1_MASTER_BASE) ||
       (I2C0_BASE == I2C2_MASTER_BASE) || (I2C0_BASE == I2C3_MASTER_BASE));
 }
@@ -105,9 +104,13 @@ I2CMasterBaseValid(uint32_t I2C0_BASE)
 int32_t
 main(void) {
   //
-  // Enable lazy stacking for interrupt handlers.
+  // Enable the floating-point unit
   //
   MAP_FPUEnable();
+
+  //
+  // Configure the floating-point unit to perform lazy stacking of the floating-point state.
+  //
   MAP_FPULazyStackingEnable();
 
   //
@@ -155,6 +158,16 @@ main(void) {
   MAP_IntMasterEnable();
 
   //
+  // Flash storage
+  //
+  uint32_t StartAddr = FLASH_STORE_START_ADDR; // Starting address of flash storage
+  uint32_t EndAddr = FLASH_STORE_END_ADDR; // Ending address of flash storage
+  uint32_t CurrAddr = StartAddr; // Current address in flash storage for read. Initialize to starting address
+  uint32_t Header = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
+  uint32_t packed_char; // 4 Byte return from storage. Theoretically holds 4 packed chars
+  uint32_t recordSize; // Size of the current flash record
+
+  //
   // GPS Variables
   //
   uint8_t command[5] = {'G','P','G','G','A'}, gpsNewChar;
@@ -196,9 +209,9 @@ main(void) {
   altCRC = altCRC4(altCalibration); // calculate the CRC.
 
   for (i=0;i<8;i++) {
-    UARTprintf("data: 0x%x\n\r", altCalibration[i]); // Print coefficients
+    UARTprintf("data: 0x%02x\n\r", altCalibration[i]); // Print coefficients
   }
-  UARTprintf("CRC: 0x%x\n\r", altCRC); // Print CRC
+  UARTprintf("CRC: 0x%02x\n\r", altCRC); // Print CRC
 
   if (altCRC != altCalibration[7]) { // If prom CRC and calculated CRC do not match, something went wrong!
     while (true) {
@@ -304,12 +317,6 @@ main(void) {
 
   } // main while end
 
-  uint32_t StartAddr = FLASH_STORE_START_ADDR;
-  uint32_t EndAddr = FLASH_STORE_END_ADDR;
-  uint32_t CurrAddr = StartAddr;
-  uint32_t Header = FLASH_STORE_RECORD_HEADER;
-  uint32_t packed_char, recordSize;
-
   LEDOn(BLUE_LED); // Out of flash memory. Output flash memory to console
 
   while (true)
@@ -332,6 +339,7 @@ main(void) {
     {
       CurrAddr = StartAddr;
       UARTprintf("*\n\r");
+      Delay(5000);
     }
   }
 }
@@ -343,8 +351,7 @@ main(void) {
 //*****************************************************************************
 
 void
-Delay(uint32_t ms)
-{
+Delay(uint32_t ms) {
   MAP_SysCtlDelay((MAP_SysCtlClockGet()/(3*1000))*ms);
 }
 
@@ -354,14 +361,12 @@ Delay(uint32_t ms)
 //
 //*****************************************************************************
 void
-LEDOn(uint8_t color)
-{
+LEDOn(uint8_t color) {
   MAP_GPIOPinWrite(GPIO_PORTF_BASE, color, color);
 }
 
 void
-LEDOff(uint8_t color)
-{
+LEDOff(uint8_t color) {
   MAP_GPIOPinWrite(GPIO_PORTF_BASE, color, 0);
 }
 
@@ -380,7 +385,7 @@ LEDBlink(uint8_t color, uint32_t time) {
 void
 LEDInit(void) {
   //
-  // Enable the GPIO port that is used for the on-board LED.
+  // Enable the peripherals used by the on-board LED.
   //
   MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
@@ -402,7 +407,7 @@ consoleInit(void) {
 
   //
   // Set GPIO A1 as UART pin for console output
-  ////
+  //
   MAP_GPIOPinConfigure(GPIO_PA0_U0RX);
   MAP_GPIOPinConfigure(GPIO_PA1_U0TX);
   MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
@@ -456,14 +461,16 @@ accelInit(void) {
   MAP_ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
   MAP_ADCSequenceEnable(ADC0_BASE, 3);
 
-  // Enable ADC int32_terupts
+  // Enable ADC interupts
   MAP_ADCIntEnable(ADC0_BASE, 3);
   MAP_ADCIntClear(ADC0_BASE, 3);
 }
 
 void
 altInit(void) {
-
+  //
+  // Enable the peripherals used by the accelerometer
+  //
   MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
   MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 
@@ -480,9 +487,9 @@ altInit(void) {
   MAP_GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
 
   //
-  // Configure I2C0 for 100kbps.
+  // Configure I2C0.
   //
-  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_100);
+  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_400);
 
   //
   // Enable I2C0 Master Block
@@ -606,7 +613,7 @@ I2CRead() {
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_READ_MODE);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_READ);
 
   //
   // Tell the master to read data.
@@ -645,12 +652,22 @@ I2CWrite(uint8_t ucValue) {
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_WRITE_MODE);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_WRITE);
+
+  //
+  // Wait until master module is done transferring.
+  //
+  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
 
   //
   // Place the command to be sent in the data register.
   //
   MAP_I2CMasterDataPut(I2C0_BASE, ucValue);
+
+  //
+  // Verify function value and registered value are the same
+  //
+  UARTprintf("Theory: 0x%02x | Registered: 0x%02x | Match: %d\r\n", ucValue, MAP_I2CMasterDataGet(I2C0_BASE), ucValue == MAP_I2CMasterDataGet(I2C0_BASE));
 
   //
   // Initiate send of data from the master.
@@ -700,13 +717,17 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_READ_MODE);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_READ);
+
+  //
+  // Wait until master module is done transferring.
+  //
+  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
 
   //
   // Start with BURST with more than one byte to write
   //
   MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_START;
-
 
   for(uibytecount = 0; uibytecount < uiSize; uibytecount++)
   {
@@ -775,7 +796,12 @@ I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize) {
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_WRITE_MODE);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_WRITE);
+
+  //
+  // Wait until master module is done transferring.
+  //
+  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
 
   //
   // The first byte has to be sent with the START control word
@@ -800,6 +826,11 @@ I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize) {
     // Send data byte
     //
     MAP_I2CMasterDataPut(I2C0_BASE, cSendData[uibytecount]);
+
+    //
+    // Wait until master module is done transferring.
+    //
+    while(MAP_I2CMasterBusy(I2C0_BASE)) {};
 
     //
     // Initiate send of data from the master.

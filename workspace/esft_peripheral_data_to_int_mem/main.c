@@ -31,9 +31,14 @@
 //
 //*****************************************************************************
 
-// I2C Modes
+// Altimeter
+#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
+
+// I2C
 #define I2C_WRITE_MODE false
 #define I2C_READ_MODE true
+#define I2C_SPEED_100 false
+#define I2C_SPEED_400 true
 
 // LED Colors
 #define RED_LED GPIO_PIN_1
@@ -63,10 +68,10 @@ uint32_t altADCConversion(uint8_t alt_cmd);
 uint8_t altCRC4(uint32_t n_prom[]);
 void altProm(uint32_t C[8]);
 void altReset(void);
-uint32_t I2CRead(uint8_t ucReg);
+uint32_t I2CRead();
 uint32_t I2CWrite(uint8_t ucValue);
 uint32_t I2CBurstRead(uint8_t* cReadData, uint32_t uiSize);
-uint32_t I2CBurstWrite(uint8_t ucReg, uint8_t* cSendData, uint32_t uiSize);
+uint32_t I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize);
 
 //*****************************************************************************
 //
@@ -100,7 +105,7 @@ I2CMasterBaseValid(uint32_t I2C0_BASE)
 int32_t
 main(void) {
   //
-  // Enable lazy stacking for int32_terrupt handlers.
+  // Enable lazy stacking for interrupt handlers.
   //
   MAP_FPUEnable();
   MAP_FPULazyStackingEnable();
@@ -188,14 +193,14 @@ main(void) {
   double altSENS; // sensitivity at actual temperature
 
   altProm(altCalibration); // read coefficients
-  uint8_t altCRCCheck = altCRC4(altCalibration); // calculate the CRC.
+  altCRC = altCRC4(altCalibration); // calculate the CRC.
 
   for (i=0;i<8;i++) {
     UARTprintf("data: 0x%x\n\r", altCalibration[i]); // Print coefficients
   }
-  UARTprintf("CRC: 0x%x\n\r", altCRCCheck); // Print CRC
+  UARTprintf("CRC: 0x%x\n\r", altCRC); // Print CRC
 
-  if (altCRCCheck != altCalibration[7]) { // If prom CRC and calculated CRC do not match, something went wrong!
+  if (altCRC != altCalibration[7]) { // If prom CRC and calculated CRC do not match, something went wrong!
     while (true) {
       LEDBlink(RED_LED, 250);
       Delay(250);
@@ -477,17 +482,14 @@ altInit(void) {
   //
   // Configure I2C0 for 100kbps.
   //
-  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), false); //false = 100kbps, true = 400kbps
-
-  //clear I2C FIFOs
-  HWREG(I2C0_BASE + I2C_O_FIFOCTL) = 80008000;
+  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_100);
 
   //
   // Enable I2C0 Master Block
   //
   MAP_I2CMasterEnable(I2C0_BASE);
 
-  // reset altimeter
+  // Reset altimeter
   altReset();
 }
 
@@ -501,7 +503,10 @@ uint32_t
 altADCConversion(uint8_t alt_cmd) {
   uint8_t ret[3];
 
-  I2CWrite(alt_cmd);
+  if (!I2CWrite(ALT_ADC_CONV & alt_cmd)) {
+    LEDBlink(YELLOW_LED, 250);
+    UARTprintf("ALT_ADC_CONV error\n\r");
+  }
   switch(alt_cmd & 0x0F) {
     case ALT_ADC_256:  Delay(ALT_256_DELAY);  break;
     case ALT_ADC_512:  Delay(ALT_512_DELAY);  break;
@@ -513,12 +518,18 @@ altADCConversion(uint8_t alt_cmd) {
   //
   // Tell altimeter to send data to launchpad
   //
-  if (!I2CWrite(ALT_ADC_READ)) LEDBlink(RED_LED, 250);
+  if (!I2CWrite(ALT_ADC_READ)) {
+    LEDBlink(YELLOW_LED, 250);
+    UARTprintf("ALT_ADC_READ write error\n\r");
+  }
 
   //
   // Start receiving data from altimeter
   //
-  if (!I2CBurstRead(ret, sizeof ret)) LEDBlink(RED_LED, 250);
+  if (!I2CBurstRead(ret, sizeof ret)) {
+    LEDBlink(YELLOW_LED, 250);
+    UARTprintf("ALT_ADC_READ receive error\n\r");
+  }
   return ( (65536*ret[0]) + (256 * ret[1]) + (ret[2]) );
 }
 
@@ -558,22 +569,29 @@ void
 altProm(uint32_t C[8]) {
   uint8_t i, ret[2];
   for (i=0;i<8;i++) {
-    if (!I2CWrite(ALT_PROM_READ+(i*2))) LEDBlink(RED_LED, 250);
-    if (!I2CBurstRead(ret, sizeof ret)) LEDBlink(RED_LED, 250);
+    if (!I2CWrite(ALT_PROM_READ+(i*2))) {
+      LEDBlink(YELLOW_LED, 250);
+      UARTprintf("ALT_PROM_READ write error\n\r");
+    }
+    if (!I2CBurstRead(ret, sizeof ret)) {
+      LEDBlink(YELLOW_LED, 250);
+      UARTprintf("ALT_PROM_READ receive error\n\r");
+    }
     C[i]  = (256 * ret[0]) + ret[1];
   }
 }
 
 void
 altReset(void) {
-  if (!I2CWrite(ALT_RESET)) LEDBlink(RED_LED, 250);
+  if (!I2CWrite(ALT_RESET)) {
+    LEDBlink(YELLOW_LED, 250);
+    UARTprintf("ALT_RESET error\n\r");
+  }
   Delay(ALT_RESET_DELAY);
 }
 
 uint32_t
-I2CRead(uint8_t ucReg) {
-  uint32_t ulRegValue = 0;
-
+I2CRead() {
   //
   // Check the arguments.
   //
@@ -583,32 +601,6 @@ I2CRead(uint8_t ucReg) {
   // Wait until master module is done transferring.
   //
   while(MAP_I2CMasterBusBusy(I2C0_BASE)) {};
-
-  //
-  // Tell the master module what address it will place on the bus when
-  // writing to the slave.
-  //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_WRITE_MODE);
-
-  //
-  // Place the command to be sent in the data register.
-  //
-  MAP_I2CMasterDataPut(I2C0_BASE, ucReg);
-
-  //
-  // Initiate send of data from the master.
-  //
-  MAP_I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
-
-  //
-  // Check for errors.
-  //
-  if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return 0;
 
   //
   // Tell the master module what address it will place on the bus when
@@ -632,14 +624,9 @@ I2CRead(uint8_t ucReg) {
   if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return 0;
 
   //
-  // Read the data from the master.
+  // return the data from the master.
   //
-  ulRegValue = MAP_I2CMasterDataGet(I2C0_BASE);
-
-  //
-  // Return the register value.
-  //
-  return ulRegValue;
+  return MAP_I2CMasterDataGet(I2C0_BASE);
 }
 
 uint32_t
@@ -688,8 +675,16 @@ I2CWrite(uint8_t ucValue) {
 
 uint32_t
 I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
-  uint32_t uibytecount;   // local variable used for byte counting/state determination
-  int32_t MasterOptionCommand;    // used to assign the commands for MAP_I2CMasterControl() function
+  //
+  // Use I2C single read if theres only 1 item to receive
+  //
+  if (uiSize == 1) {
+    cReadData[0] = I2CRead();
+    return cReadData[0];
+  }
+
+  uint32_t uibytecount;        // local variable used for byte counting/state determination
+  uint32_t MasterOptionCommand; // used to assign the control commands
 
   //
   // Check the arguments.
@@ -705,7 +700,7 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, true);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_READ_MODE);
 
   //
   // Start with BURST with more than one byte to write
@@ -726,12 +721,6 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
     //
     if(uibytecount == uiSize - 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_FINISH;
-
-    //
-    // Re-configure to SINGLE if there is only one byte to read
-    //
-    if(uiSize == 1)
-      MasterOptionCommand = I2C_MASTER_CMD_SINGLE_RECEIVE;
 
     //
     // Initiate read of data from the slave.
@@ -761,9 +750,16 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
 }
 
 uint32_t
-I2CBurstWrite(uint8_t ucReg, uint8_t* cSendData, uint32_t uiSize) {
-  uint32_t uibytecount;   // local variable used for byte counting/state determination
-  int32_t MasterOptionCommand;    // used to assign the commands for MAP_I2CMasterControl() function
+I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize) {
+  //
+  // Use I2C single write if theres only 1 item to send
+  //
+  if (uiSize == 1) {
+    return I2CWrite(cSendData[0]);
+  }
+
+  uint32_t uibytecount;         // local variable used for byte counting/state determination
+  uint32_t MasterOptionCommand; // used to assign the control commands
 
   //
   // Check the arguments.
@@ -779,38 +775,17 @@ I2CBurstWrite(uint8_t ucReg, uint8_t* cSendData, uint32_t uiSize) {
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, false);
+  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_WRITE_MODE);
 
   //
-  // Place the value to be sent in the data register.
+  // The first byte has to be sent with the START control word
   //
-  MAP_I2CMasterDataPut(I2C0_BASE, ucReg);
-
-  //
-  // Initiate send of data from the master.
-  //
-  MAP_I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_SEND_START);
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
-
-  //
-  // Check for errors.
-  //
-  if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return 0;
-
-  //
-  // Start with CONT for more than one byte to write
-  //
-  MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_CONT;
-
+  MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_START;
 
   for(uibytecount = 0; uibytecount < uiSize; uibytecount++)
   {
     //
-    // The second and int32_termittent byte has to be send with CONTINUE control word
+    // The second and intermittent byte has to be send with CONTINUE control word
     //
     if(uibytecount == 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_CONT;
@@ -820,12 +795,6 @@ I2CBurstWrite(uint8_t ucReg, uint8_t* cSendData, uint32_t uiSize) {
     //
     if(uibytecount == uiSize - 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_FINISH;
-
-    //
-    // Re-configure to SINGLE if there is only one byte to write
-    //
-    if(uiSize == 1)
-      MasterOptionCommand = I2C_MASTER_CMD_SINGLE_SEND;
 
     //
     // Send data byte

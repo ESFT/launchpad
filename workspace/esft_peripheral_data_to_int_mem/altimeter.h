@@ -33,13 +33,18 @@ extern "C"
 // is the complementary value of the pin CSB. Since the IC does not have a
 // microcontroller inside, the commands for I2 C and SPI are quite similar.
 //
+// I2C address for Tiva are a 7 bit address with the 8th bit being the RS bit.
+// As such, the address for the MS5607-02BA should be right shifted by 1,
+// making the address 111011C. Depending on C, the final address is 0x77 when
+// CSB is pulled low and 0x76 when CSB is pulled high.
+//
 
 //
 // Address of Altimeter
 //
-#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 #define ALT_ADDRESS_CSB_LO 0x77
 #define ALT_ADDRESS_CSB_HI 0x76
+
 //
 // Reset
 //
@@ -48,9 +53,12 @@ extern "C"
 // the device ROM from an unknown condition.
 //
 #define ALT_RESET 0x1E
-
 #define ALT_RESET_DELAY 3
 
+//
+// ACD Read
+//
+#define ALT_ADC_READ 0x00
 
 //
 // Conversion Sequence
@@ -65,6 +73,8 @@ extern "C"
 // will be wrong. Conversion sequence sent during the already started conversion process
 // will yield incorrect result as well.
 //
+
+#define ALT_ADC_CONV 0x40
 
 //
 // Conversion type
@@ -87,12 +97,6 @@ extern "C"
 #define ALT_1024_DELAY 4
 #define ALT_2048_DELAY 6
 #define ALT_4096_DELAY 10
-
-//
-// ACD Read
-//
-#define ALT_ADC_READ 0x00
-
 
 //
 // PROM Read Sequence

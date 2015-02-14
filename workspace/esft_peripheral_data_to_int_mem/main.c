@@ -22,7 +22,7 @@
 #include "driverlib/uart.h"
 
 #include "altimeter.h"
-#include "flashStore.h"
+#include "flashstore.h"
 #include "uartstdio.h"
 
 //*****************************************************************************
@@ -51,26 +51,39 @@
 
 //*****************************************************************************
 //
+// "Beep" Codes (Uses LED)
+// See ESFT Error Codes Spreadsheet for more information
+//
+//*****************************************************************************
+typedef enum BEEPCODE {
+  GOOD, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
+  ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
+  ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
+  } BeepCode;
+
+//*****************************************************************************
+//
 // Prototypes
 //
 //*****************************************************************************
-void Delay(uint32_t ms);
+void delay(uint32_t ms);
+void beep(BeepCode code);
 void LEDOn(uint8_t color);
 void LEDOff(uint8_t color);
 void LEDBlink(uint8_t color, uint32_t time);
-void UARTSend(const int8_t *pui8Buffer, uint32_t ui32Count);
 void LEDInit(void);
 void consoleInit(void);
 void gpsInit(void);
 void accelInit(void);
 void altInit(void);
-uint32_t altADCConversion(uint8_t alt_cmd);
-uint8_t altCRC4(uint32_t n_prom[]);
-void altProm(uint32_t C[8]);
-void altReset(void);
+void gpsReceive(uint8_t* buffer, uint32_t* bIndex);
+bool altADCConversion(uint8_t alt_cmd, uint32_t* adc_conv);
+uint8_t altCRC4(uint16_t n_prom[]);
+bool altProm(uint16_t C[8]);
+bool altReset(void);
 uint32_t I2CRead();
 uint32_t I2CWrite(uint8_t ucValue);
-uint32_t I2CBurstRead(uint8_t* cReadData, uint32_t uiSize);
+uint32_t I2CBurstRead(uint32_t* cReadData, uint32_t uiSize);
 uint32_t I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize);
 
 //*****************************************************************************
@@ -81,18 +94,11 @@ uint32_t I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize);
 #ifdef DEBUG
 void
 __error__(char *pcFilename, uint32_t ui32Line) {
-  UARTprintf("Error at line %d of %s\n", ui32Line, pcFilename);
-  while(true) {
-    LEDBlink(RED_LED, 250);
-    LEDBlink(BLUE_LED, 250);
-    LEDBlink(WHITE_LED, 250);
-  };
-}
 
-static tBoolean
-I2CMasterBaseValid(uint32_t I2C0_BASE) {
-  return( (I2C0_BASE == I2C0_MASTER_BASE) || (I2C0_BASE == I2C1_MASTER_BASE) ||
-      (I2C0_BASE == I2C2_MASTER_BASE) || (I2C0_BASE == I2C3_MASTER_BASE));
+  while(true) {
+    UARTprintf("Error at line %d of %s\n", ui32Line, pcFilename);
+    beep(DRL_ERR);
+  };
 }
 #endif
 
@@ -150,7 +156,7 @@ main(void) {
   //
   // Enable flash storage
   //
-  uint32_t FreeSpaceAvailable = flashStoreInit();
+  uint32_t FreeSpaceAvailable = flashstoreInit();
 
   //
   // Enable processor interrupts.
@@ -158,24 +164,20 @@ main(void) {
   MAP_IntMasterEnable();
 
   //
-  // Flash storage
+  // Flash storage variables
   //
-  uint32_t StartAddr = FLASH_STORE_START_ADDR; // Starting address of flash storage
-  uint32_t EndAddr = FLASH_STORE_END_ADDR; // Ending address of flash storage
-  uint32_t CurrAddr = StartAddr; // Current address in flash storage for read. Initialize to starting address
-  uint32_t Header = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
-  uint32_t packed_char; // 4 Byte return from storage. Theoretically holds 4 packed chars
-  uint32_t recordSize; // Size of the current flash record
+  uint32_t flashStartAddr = FLASH_STORE_START_ADDR; // Starting address of flash storage
+  uint32_t flashEndAddr = FLASH_STORE_END_ADDR; // Ending address of flash storage
+  uint32_t flashCurrAddr = flashStartAddr; // Current address in flash storage for read. Initialize to starting address
+  uint32_t flashHeader = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
+  uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
+  uint32_t flashRecordSize; // Size of the current flash record
 
   //
   // GPS Variables
   //
-  uint8_t command[5] = {'G','P','G','G','A'}, gpsNewChar;
-  uint16_t gpsBufferIndex, i;
-  bool gpsMatch, gpsNoStar; // booleans
-
-  /*
-  GPS Buffer
+  uint32_t gpsBufferIndex;
+  uint8_t gpsBuffer[128]; /*
   * GPS throws max of 87 chars (TextCRLF) ( 87 chars = 87 bytes )
   * $GPGGA,HHMMSS.SS,DDMM.MMMMM,K,DDDMM.MMMMM,L,N,QQ,PP.P,AAAA.AA,M,+XX.XX,M,SSS,RRRR*CC<CR><LF>
   * Strip *CC<CR><LF>            ( 87 - 5 = 82 chars = 82 bytes )
@@ -185,7 +187,6 @@ main(void) {
   * Round to near 4 bytes for flash (88 Bytes = 22 packed uint32_t)
   * Add some padding just in case (128 bytes)
   */
-  uint8_t gpsBuffer[128];
 
   //
   // Accelerometer variables
@@ -195,28 +196,32 @@ main(void) {
   //
   // Altimeter variables
   //
-  uint32_t altD1; // ADC value of the pressure conversion
-  uint32_t altD2; // ADC value of the temperature conversion
-  uint32_t altCalibration[8]; // calibration coefficients
+  // Calibration data
+  uint16_t altCalibration[8]; // calibration coefficients
   uint8_t  altCRC; // calculated CRC
-  double altP; // compensated pressure value
-  double altT; // compensated temperature value
-  double altdT; // difference between actual and measured temperature
-  double altOFF; // offset at actual temperature
-  double altSENS; // sensitivity at actual temperature
+  // Digital pressure and temp
+  uint32_t altD1;   // ADC value of the pressure conversion
+  uint32_t altD2;   // ADC value of the temperature conversion
+  // Temp difference, offset, and sensitivity
+  int32_t  altdT;   // difference between actual and measured temperature
+  int64_t  altOFF;  // offset at actual temperature
+  int64_t  altSENS; // sensitivity at actual temperature
+  // Temperature
+  // int32_t  altT;    // compensated temperature value
+  // float altTFloat;  // Decimal form of temperature value (altT/100)
+  // Pressure
+  int32_t  altP;    // compensated pressure value
+  float altPFloat;  // Decimal form of pressure value (altP/100)
 
-  altProm(altCalibration); // read coefficients
+  float altAltitude; // Calculated altitude
+
+  while (!altProm(altCalibration)) {}; // read coefficients
   altCRC = altCRC4(altCalibration); // calculate the CRC.
 
-  for (i=0;i<8;i++) {
-    UARTprintf("data: 0x%02x\n\r", altCalibration[i]); // Print coefficients
-  }
-  UARTprintf("CRC: 0x%02x\n\r", altCRC); // Print CRC
-
-  if (altCRC != altCalibration[7]) { // If prom CRC and calculated CRC do not match, something went wrong!
+  if (altCRC == (altCalibration[7] & 0xFF00)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
     while (true) {
-      LEDBlink(RED_LED, 250);
-      Delay(250);
+      beep(ALT_CRC_ERR);
+      delay(250);
     }
   }
 
@@ -224,52 +229,12 @@ main(void) {
   while(FreeSpaceAvailable) {
     gpsBufferIndex = 0; //start gpsBuffer[] at zero
 
-    if (MAP_UARTCharsAvail(UART4_BASE)) { //find out if GPS has sent data
-
-      gpsNewChar = MAP_UARTCharGet(UART4_BASE);
-      if ( gpsNewChar == '$') { // find start of a string of info
-
-        gpsBuffer[gpsBufferIndex] = gpsNewChar; gpsBufferIndex++; // Add $ as delimiter
-
-        gpsMatch = true; // Assume match is true. Check in next loop.
-
-        for (i = 0; i < 5; i++) {
-          gpsNewChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
-
-          if (gpsNewChar == command[i]) { // validate init match assumption
-            gpsBuffer[gpsBufferIndex] = gpsNewChar; gpsBufferIndex++;
-          }
-          else {
-            gpsMatch = false; // Assumption was wrong. Break and retry.
-            break;
-          }
-        }
-
-        //if the opening string matched "GPGGA", start processing the data feed
-        if (gpsMatch) {
-
-          gpsNoStar = true; //while asterisk is not found
-
-          while (gpsNoStar) {
-        	gpsNewChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
-            if (gpsNewChar == '*') {
-              gpsNoStar = false; //if asterisk is found
-            } else {
-              gpsBuffer[gpsBufferIndex] = gpsNewChar; gpsBufferIndex++;
-            }
-          }
-
-
-          // Add Callsign at end of GPS data log
-          gpsBuffer[gpsBufferIndex] = 'K'; gpsBufferIndex++;
-          gpsBuffer[gpsBufferIndex] = 'R'; gpsBufferIndex++;
-          gpsBuffer[gpsBufferIndex] = '0'; gpsBufferIndex++;
-          gpsBuffer[gpsBufferIndex] = 'C'; gpsBufferIndex++;
-          gpsBuffer[gpsBufferIndex] = 'K'; gpsBufferIndex++;
-          gpsBuffer[gpsBufferIndex] = 'T'; gpsBufferIndex++;
-        }
-      } //If char == $
-    } // main if (Chars avail)
+    //
+    // Get data from GPS
+    //
+    if (MAP_UARTCharsAvail(UART4_BASE)) { // Find out if GPS has data available
+      gpsReceive(&gpsBuffer[0], &gpsBufferIndex);
+    }
 
     //
     // Get data from accelerometer
@@ -285,22 +250,29 @@ main(void) {
     //
 
     // D1 and D2 Conversion
-    altD2 = altADCConversion(ALT_ADC_D2+ALT_ADC_256);
-    altD1 = altADCConversion(ALT_ADC_D1+ALT_ADC_256);
+    if (altADCConversion(ALT_ADC_D1+ALT_ADC_256, &altD1) && altADCConversion(ALT_ADC_D2+ALT_ADC_256, &altD2)) {
+      // Calculate 1st order pressure and temperature (MS5607 1st order algorithm)
 
-    // Calcualte 1st order pressure and temperature (MS5607 1st order algorithm)
-    altdT=altD2-altCalibration[5]*pow(2,8);
-    altOFF=altCalibration[2]*pow(2,17)+altdT*altCalibration[4]/pow(2,6);
-    altSENS=altCalibration[1]*pow(2,16)+altdT*altCalibration[3]/pow(2,7);
+      // Calculate temp difference, offset, and sensitivity
+      altdT=altD2-altCalibration[5]*pow(2,8);
+      altOFF=altCalibration[2]*pow(2,17)+altdT*altCalibration[4]/pow(2,6);
+      altSENS=altCalibration[1]*pow(2,16)+altdT*altCalibration[3]/pow(2,7);
 
-    // Calculate temperature and pressure
-    altT=(2000+(altdT*altCalibration[6])/pow(2,23))/100;
-    altP=(((altD1*altSENS)/pow(2,21)-altOFF)/pow(2,15))/100;
+      // Calculate temperature
+      // altT=2000+(altdT*altCalibration[6])/pow(2,23);
+      // altTFloat = altT/100;
+
+      // Calculate pressure
+      altP=((altD1*altSENS)/pow(2,21)-altOFF)/pow(2,15);
+      altPFloat = altP/100;
+
+      altAltitude = (1-pow((altPFloat/1013.25),.190284))*145366.45;
+    }
 
     //
     // Send data over UART for debugging
     //
-    UARTprintf("accel: %d\n\rpressure: %f\n\rtemp: %f\n\r\n\r", accelData, altP, altT);
+    UARTprintf("accel: %d\n\rpressure: %d\n\ralt: %d\n\r\n\r", accelData, altP, (uint64_t) altAltitude);
 
     /*
     //
@@ -309,37 +281,34 @@ main(void) {
     // TODO: save accelData data to flash
     //
     if (gpsBufferIndex > 0) { // We have data to write
-      FreeSpaceAvailable = flashStoreWriteRecord(&gpsBuffer[0], gpsBufferIndex);
+      FreeSpaceAvailable = flashstoreWriteRecord(&gpsBuffer[0], gpsBufferIndex);
     }
     */
 
-    LEDBlink(GREEN_LED, 100); // Blink Green LED to verify code is running
+    beep(GOOD); // Green LED to verify code is running
 
   } // main while end
 
-  LEDOn(BLUE_LED); // Out of flash memory. Output flash memory to console
+  beep(OUT_OF_FLASH);
 
+  // Out of flash memory. Output flash memory to console
   while (true)
   {
-    packed_char = flashStoreGetData(CurrAddr);
-    if((packed_char & 0xFFFFFF00) == Header) {
-      recordSize = packed_char & 0xFF;
-      for (i=0; i < (recordSize - 0x04) / 4; i++) {
-        CurrAddr += 0x04;
-        packed_char = flashStoreGetData(CurrAddr);
-        UARTprintf("%c%c%c%c", unpack_c0(packed_char), unpack_c1(packed_char), unpack_c2(packed_char), unpack_c3(packed_char));
+    flashPackedChar = flashstoreGetData(flashCurrAddr);
+    if((flashPackedChar & 0xFFFFFF00) == flashHeader) {
+      flashRecordSize = flashPackedChar & 0xFF;
+      for (; flashCurrAddr < (flashCurrAddr + flashRecordSize); flashCurrAddr += 0x04) {
+        flashPackedChar = flashstoreGetData(flashCurrAddr);
+        UARTprintf("%c%c%c%c", unpack_c0(flashPackedChar), unpack_c1(flashPackedChar), unpack_c2(flashPackedChar), unpack_c3(flashPackedChar));
       }
       UARTprintf("\n\r");
+    } else {
+      flashCurrAddr += 0x04;
     }
-    else {
-      CurrAddr += 0x04;
-    }
-
-    if (CurrAddr >= EndAddr)
-    {
-      CurrAddr = StartAddr;
+    if (flashCurrAddr >= flashEndAddr) {
+      flashCurrAddr = flashStartAddr;
       UARTprintf("*\n\r");
-      Delay(5000);
+      delay(5000);
     }
   }
 }
@@ -351,8 +320,95 @@ main(void) {
 //*****************************************************************************
 
 void
-Delay(uint32_t ms) {
+delay(uint32_t ms) {
   MAP_SysCtlDelay((MAP_SysCtlClockGet()/(3*1000))*ms);
+}
+
+void
+beep(BeepCode code) {
+  LEDOff(RED_LED | GREEN_LED | BLUE_LED);
+  switch (code) {
+    case GOOD: { // code is running
+      LEDOn(GREEN_LED);
+      break;
+    }
+    case DRL_ERR: { // driver library encountered an error
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      LEDBlink(BLUE_LED, 250);
+      delay(250);
+      LEDBlink(WHITE_LED, 250);
+      delay(250);
+      break;
+    }
+    case ALT_CRC_ERR: { // altimeter calibration error
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      break;
+    }
+    case OUT_OF_FLASH: { // out of flash memory
+      LEDOn(BLUE_LED);
+      break;
+    }
+    case ALT_ADC_CONV_ERR: { // ALT_ADC_CONV error
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      break;
+    }
+    case ALT_ADC_R_WRITE_ERR: { // ALT_ADC_READ write error
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 750);
+      delay(250);
+      break;
+    }
+    case ALT_ADC_R_READ_ERR: { // ALT_ADC_READ read error
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(YELLOW_LED, 750);
+      delay(250);
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      break;
+    }
+    case ALT_PROM_R_WRITE_ERR: { // ALT_PROM_READ write error
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(YELLOW_LED, 750);
+      delay(250);
+      LEDBlink(RED_LED, 750);
+      delay(250);
+      break;
+    }
+    case ALT_PROM_R_READ_ERR: { // ALT_PROM_READ read error
+      LEDBlink(YELLOW_LED, 750);
+      delay(250);
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 250);
+      delay(250);
+      break;
+    }
+    case ALT_RESET_ERR: { // ALT_RESET error
+      LEDBlink(YELLOW_LED, 750);
+      delay(250);
+      LEDBlink(YELLOW_LED, 250);
+      delay(250);
+      LEDBlink(RED_LED, 750);
+      delay(250);
+      break;
+    }
+  }
 }
 
 //*****************************************************************************
@@ -373,7 +429,7 @@ LEDOff(uint8_t color) {
 void
 LEDBlink(uint8_t color, uint32_t time) {
     LEDOn(color);
-    Delay(time);
+    delay(time);
     LEDOff(color);
 }
 
@@ -415,7 +471,7 @@ consoleInit(void) {
   //
   // Configure UARTstdio Library
   //
-  UARTStdioConfig(0, 115200, 16000000);
+  UARTStdioConfig(0, 115200, MAP_SysCtlClockGet());
 }
 
 void
@@ -497,7 +553,7 @@ altInit(void) {
   MAP_I2CMasterEnable(I2C0_BASE);
 
   // Reset altimeter
-  altReset();
+  while (!altReset()) {};
 }
 
 //*****************************************************************************
@@ -506,54 +562,107 @@ altInit(void) {
 //
 //*****************************************************************************
 
-uint32_t
-altADCConversion(uint8_t alt_cmd) {
-  uint8_t ret[3];
+void
+gpsReceive(uint8_t* buffer, uint32_t* bIndex) {
+  uint8_t command[5] = {'G','P','G','G','A'}, newChar, i;
+  bool match, noStar; // booleans
+
+  newChar = MAP_UARTCharGet(UART4_BASE);
+  if ( newChar == '$') { // find start of a string of info
+
+    buffer[*bIndex] = newChar; *bIndex++; // Add $ as delimiter
+
+    match = true; // Assume match is true. Check in next loop.
+
+    for (i = 0; i < 5; i++) {
+      newChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
+
+      if (newChar == command[i]) { // validate init match assumption
+        buffer[*bIndex] = newChar; *bIndex++;
+      }
+      else {
+        match = false; // Assumption was wrong. Break and retry.
+        break;
+      }
+    }
+
+    //if the opening string matched "GPGGA", start processing the data feed
+    if (match) {
+
+      noStar = true; //while asterisk is not found
+
+      while (noStar) {
+      newChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
+        if (newChar == '*') {
+          noStar = false; //if asterisk is found
+        } else {
+          buffer[*bIndex] = newChar; *bIndex++;
+        }
+      }
+
+      // Add Callsign at end of GPS data log
+      buffer[*bIndex] = 'K'; *bIndex++;
+      buffer[*bIndex] = 'R'; *bIndex++;
+      buffer[*bIndex] = '0'; *bIndex++;
+      buffer[*bIndex] = 'C'; *bIndex++;
+      buffer[*bIndex] = 'K'; *bIndex++;
+      buffer[*bIndex] = 'T'; *bIndex++;
+    }
+  } //If char == $
+}
+
+bool
+altADCConversion(uint8_t alt_cmd, uint32_t* adc_conv) {
+  uint32_t ret[3];
 
   if (!I2CWrite(ALT_ADC_CONV & alt_cmd)) {
-    LEDBlink(YELLOW_LED, 250);
-    UARTprintf("ALT_ADC_CONV error\n\r");
+    beep(ALT_ADC_CONV_ERR);
+    UARTprintf("ALT_ADC_CONV write error on line %d in file %s\n\r", __LINE__, __FILE__);
   }
   switch(alt_cmd & 0x0F) {
-    case ALT_ADC_256:  Delay(ALT_256_DELAY);  break;
-    case ALT_ADC_512:  Delay(ALT_512_DELAY);  break;
-    case ALT_ADC_1024: Delay(ALT_1024_DELAY); break;
-    case ALT_ADC_2048: Delay(ALT_2048_DELAY); break;
-    case ALT_ADC_4096: Delay(ALT_4096_DELAY); break;
+    case ALT_ADC_256:  delay(ALT_256_DELAY);  break;
+    case ALT_ADC_512:  delay(ALT_512_DELAY);  break;
+    case ALT_ADC_1024: delay(ALT_1024_DELAY); break;
+    case ALT_ADC_2048: delay(ALT_2048_DELAY); break;
+    case ALT_ADC_4096: delay(ALT_4096_DELAY); break;
   }
 
   //
   // Tell altimeter to send data to launchpad
   //
   if (!I2CWrite(ALT_ADC_READ)) {
-    LEDBlink(YELLOW_LED, 250);
-    UARTprintf("ALT_ADC_READ write error\n\r");
+    beep(ALT_ADC_R_WRITE_ERR);
+    UARTprintf("ALT_ADC_READ write error on line %d in file %s\n\r", __LINE__, __FILE__);
+    return 0;
   }
 
   //
   // Start receiving data from altimeter
   //
-  if (!I2CBurstRead(ret, sizeof ret)) {
-    LEDBlink(YELLOW_LED, 250);
-    UARTprintf("ALT_ADC_READ receive error\n\r");
+  if (!I2CBurstRead(ret, 3)) {
+    beep(ALT_ADC_R_READ_ERR);
+    UARTprintf("ALT_ADC_READ read error on line %d in file %s\n\r", __LINE__, __FILE__);
+    return 0;
   }
-  return ( (65536*ret[0]) + (256 * ret[1]) + (ret[2]) );
+
+  *adc_conv = (65536*ret[0]) + (256 * ret[1]) + ret[2];
+  return true;
 }
 
 uint8_t
-altCRC4(uint32_t n_prom[]) {
+altCRC4(uint16_t n_prom[]) {
   int32_t cnt; // simple counter
-  uint32_t n_rem = 0x00; // crc reminder
-  uint32_t crc_read = n_prom[7]; // original value of the crc
+  uint16_t n_rem = 0x00; // crc reminder
+  uint16_t crc_read = n_prom[7]; // original value of the crc
   uint8_t n_bit;
   n_prom[7]=(0xFF00 & (n_prom[7])); //CRC byte is replaced by 0
   for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
   { // choose LSB or MSB
     if (cnt%2==1) {
-      n_rem ^= (unsigned short) ((n_prom[cnt>>1]) & 0x00FF);
+      n_rem ^= (n_prom[cnt>>1]) & 0x00FF;
     }
     else {
-      n_rem ^= (unsigned short) (n_prom[cnt>>1]>>8);
+      n_rem ^= n_prom[cnt>>1]>>8;
     }
     for (n_bit = 8; n_bit > 0; n_bit--)
     {
@@ -572,43 +681,39 @@ altCRC4(uint32_t n_prom[]) {
   return (n_rem ^ 0x0);
 }
 
-void
-altProm(uint32_t C[8]) {
-  uint8_t i, ret[2];
-  for (i=0;i<8;i++) {
+bool
+altProm(uint16_t C[8]) {
+  uint32_t i;
+  uint32_t ret[2];
+  for (i = 0; i < 8; i++) {
     if (!I2CWrite(ALT_PROM_READ+(i*2))) {
-      LEDBlink(YELLOW_LED, 250);
-      UARTprintf("ALT_PROM_READ write error\n\r");
+      beep(ALT_PROM_R_WRITE_ERR);
+      UARTprintf("ALT_PROM_READ write error on line %d in file %s\n\r", __LINE__, __FILE__);
+      return 0;
     }
-    if (!I2CBurstRead(ret, sizeof ret)) {
-      LEDBlink(YELLOW_LED, 250);
-      UARTprintf("ALT_PROM_READ receive error\n\r");
+    if (!I2CBurstRead(ret, 2)) {
+      beep(ALT_PROM_R_READ_ERR);
+      UARTprintf("ALT_PROM_READ read error on line %d in file %s\n\r", __LINE__, __FILE__);
+      return 0;
     }
-    C[i]  = (256 * ret[0]) + ret[1];
+    C[i] = ((256 * ret[0]) + ret[1]);
   }
+  return 1;
 }
 
-void
+bool
 altReset(void) {
   if (!I2CWrite(ALT_RESET)) {
-    LEDBlink(YELLOW_LED, 250);
-    UARTprintf("ALT_RESET error\n\r");
+    beep(ALT_RESET_ERR);
+    UARTprintf("ALT_RESET write error on line %d in file %s\n\r", __LINE__, __FILE__);
+    return 0;
   }
-  Delay(ALT_RESET_DELAY);
+  delay(ALT_RESET_DELAY);
+  return 1;
 }
 
 uint32_t
 I2CRead() {
-  //
-  // Check the arguments.
-  //
-  ASSERT(I2CMasterBaseValid(I2C0_BASE));
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusBusy(I2C0_BASE)) {};
-
   //
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
@@ -639,35 +744,15 @@ I2CRead() {
 uint32_t
 I2CWrite(uint8_t ucValue) {
   //
-  // Check the arguments.
-  //
-  ASSERT(I2CMasterBaseValid(I2C0_BASE));
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusBusy(I2C0_BASE)) {};
-
-  //
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
   MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_WRITE);
 
   //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
-
-  //
   // Place the command to be sent in the data register.
   //
   MAP_I2CMasterDataPut(I2C0_BASE, ucValue);
-
-  //
-  // Verify function value and registered value are the same
-  //
-  UARTprintf("Theory: 0x%02x | Registered: 0x%02x | Match: %d\r\n", ucValue, MAP_I2CMasterDataGet(I2C0_BASE), ucValue == MAP_I2CMasterDataGet(I2C0_BASE));
 
   //
   // Initiate send of data from the master.
@@ -691,7 +776,7 @@ I2CWrite(uint8_t ucValue) {
 }
 
 uint32_t
-I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
+I2CBurstRead(uint32_t* cReadData, uint32_t uiSize) {
   //
   // Use I2C single read if theres only 1 item to receive
   //
@@ -700,18 +785,8 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
     return cReadData[0];
   }
 
-  uint32_t uibytecount;        // local variable used for byte counting/state determination
+  uint32_t uiByteCount;        // local variable used for byte counting/state determination
   uint32_t MasterOptionCommand; // used to assign the control commands
-
-  //
-  // Check the arguments.
-  //
-  ASSERT(I2CMasterBaseValid(I2C0_BASE));
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusBusy(I2C0_BASE)) {};
 
   //
   // Tell the master module what address it will place on the bus when
@@ -720,27 +795,22 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
   MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_READ);
 
   //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
-
-  //
-  // Start with BURST with more than one byte to write
+  // Start with BURST with more than one byte to read
   //
   MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_START;
 
-  for(uibytecount = 0; uibytecount < uiSize; uibytecount++)
+  for(uiByteCount = 0; uiByteCount < uiSize; uiByteCount++)
   {
     //
-    // The second and int32_termittent byte has to be read with CONTINUE control word
+    // The second and intermittent byte has to be read with CONTINUE control word
     //
-    if(uibytecount == 1)
+    if(uiByteCount == 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_CONT;
 
     //
     // The last byte has to be send with FINISH control word
     //
-    if(uibytecount == uiSize - 1)
+    if(uiByteCount == uiSize - 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_FINISH;
 
     //
@@ -756,18 +826,18 @@ I2CBurstRead(uint8_t* cReadData, uint32_t uiSize) {
     //
     // Check for errors.
     //
-    if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return 0;
+    if (MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return 0;
 
     //
     // Move byte from register
     //
-    cReadData[uibytecount] = I2CMasterDataGet(I2C0_BASE);
+    cReadData[uiByteCount] = MAP_I2CMasterDataGet(I2C0_BASE);
   }
 
   //
   // Return 1 if there is no error.
   //
-  return uibytecount;
+  return uiByteCount;
 }
 
 uint32_t
@@ -779,18 +849,8 @@ I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize) {
     return I2CWrite(cSendData[0]);
   }
 
-  uint32_t uibytecount;         // local variable used for byte counting/state determination
+  uint32_t uiByteCount;         // local variable used for byte counting/state determination
   uint32_t MasterOptionCommand; // used to assign the control commands
-
-  //
-  // Check the arguments.
-  //
-  ASSERT(I2CMasterBaseValid(I2C0_BASE));
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusBusy(I2C0_BASE)) {};
 
   //
   // Tell the master module what address it will place on the bus when
@@ -808,29 +868,24 @@ I2CBurstWrite(uint8_t* cSendData, uint32_t uiSize) {
   //
   MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_START;
 
-  for(uibytecount = 0; uibytecount < uiSize; uibytecount++)
+  for(uiByteCount = 0; uiByteCount < uiSize; uiByteCount++)
   {
     //
     // The second and intermittent byte has to be send with CONTINUE control word
     //
-    if(uibytecount == 1)
+    if(uiByteCount == 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_CONT;
 
     //
     // The last byte has to be send with FINISH control word
     //
-    if(uibytecount == uiSize - 1)
+    if(uiByteCount == uiSize - 1)
       MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_FINISH;
 
     //
     // Send data byte
     //
-    MAP_I2CMasterDataPut(I2C0_BASE, cSendData[uibytecount]);
-
-    //
-    // Wait until master module is done transferring.
-    //
-    while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+    MAP_I2CMasterDataPut(I2C0_BASE, cSendData[uiByteCount]);
 
     //
     // Initiate send of data from the master.

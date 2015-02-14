@@ -88,17 +88,17 @@ extern uint8_t  unpack_c0(uint32_t);
 extern uint8_t  unpack_c1(uint32_t);
 extern uint8_t  unpack_c2(uint32_t);
 extern uint8_t  unpack_c3(uint32_t);
-extern int32_t  flashStoreInit(void);
-extern int32_t  flashStoreNewLogFile(uint32_t ui32StartAddr, int);
-extern int32_t  flashStoreWriteRecord(uint8_t *, int);
-extern int32_t  flashStoreSave(void);
-extern void     flashStoreErase(void);
-static int32_t  IsBlockFree(uint32_t ui32BaseAddr);
-extern int32_t  flashStoreFree(void);
-extern int32_t  flashStoreUsed(void);
-extern uint32_t flashStoreGetData(uint32_t);
-extern uint32_t flashStoreGetCurrentAddr(void);
-extern void     flashStoreSetCurrentAddr(uint32_t);
+extern int32_t  flashstoreInit(void);
+extern int32_t  flashstoreNewLogFile(uint32_t ui32StartAddr, int);
+extern int32_t  flashstoreWriteRecord(uint8_t *, int);
+extern int32_t  flashstoreSave(void);
+extern void     flashstoreErase(void);
+static int32_t  flashstoreIsBlockFree(uint32_t ui32BaseAddr);
+extern int32_t  flashstoreFree(void);
+extern int32_t  flashstoreUsed(void);
+extern uint32_t flashstoreGetData(uint32_t);
+extern uint32_t flashstoreGetCurrentAddr(void);
+extern void     flashstoreSetCurrentAddr(uint32_t);
 
 //*****************************************************************************
 //

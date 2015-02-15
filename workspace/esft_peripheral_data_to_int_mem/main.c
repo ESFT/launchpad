@@ -55,6 +55,10 @@
 // See ESFT Error Codes Spreadsheet for more information
 //
 //*****************************************************************************
+
+// Determines if beep codes are enabled. Comment out to disable functionality
+#define BEEP_CODES_ENABLED
+
 typedef enum BEEPCODE {
   INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
   ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
@@ -122,7 +126,7 @@ main(void) {
   uint32_t flashHeader = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
   uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
   uint32_t flashRecordSize; // Size of the current flash record
-  char     flashWriteBuffer[512]; // Buffer of the data to write
+  uint8_t  flashWriteBuffer[512]; // Buffer of the data to write
   int32_t  flashWriteBufferSize;  // Length of the record to write
 
   //
@@ -227,12 +231,12 @@ main(void) {
     altDataReceived = altReceive(ALT_ADC_256, altCalibration, &altTemperature, &altPressure, &altAltitude);
 
 
-    flashWriteBufferSize = sprintf(flashWriteBuffer, "Accelerometer: %d\n\r", accelData);
+    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "Accelerometer: %d\n\r", accelData);
     if (gpsDataReceived) { // gps data was received
-      flashWriteBufferSize = sprintf(flashWriteBuffer, "%sGPS: %s\n\r", flashWriteBuffer, gpsSentence);
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sGPS: %s\n\r", flashWriteBuffer, gpsSentence);
     }
     if (altDataReceived) { // altimeter data was received
-      flashWriteBufferSize = sprintf(flashWriteBuffer, "%sTemperature: %f C\n\rPressure: %f mbar\n\rAltitude: %f\n\r", flashWriteBuffer, altTemperature, altPressure, altAltitude);
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sTemperature: %f C\n\rPressure: %f mbar\n\rAltitude: %f\n\r", flashWriteBuffer, altTemperature, altPressure, altAltitude);
     }
 
     //
@@ -282,6 +286,7 @@ delay(uint32_t ui32ms) {
 }
 void
 beep(BeepCode code) {
+#ifdef BEEP_CODES_ENABLED
   LEDOff(RED_LED | GREEN_LED | BLUE_LED); // Reset LED to off state
   switch (code) {
     case INITIALIZING: { // device is initializing
@@ -369,6 +374,7 @@ beep(BeepCode code) {
       break;
     }
   }
+#endif
 }
 
 //*****************************************************************************

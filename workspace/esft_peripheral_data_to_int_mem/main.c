@@ -680,11 +680,11 @@ altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPr
   uint32_t D2 = 0;   // ADC value of the temperature conversion
 
   // Temp difference, offsets, and sensitivities
-  int32_t  dT = 0;   // difference between actual and measured temperature
-  int32_t  T2 = 0;   // second order temperature offset
-  int64_t  OFF = 0;  // offset at actual temperature
-  int64_t  OFF2 = 0;  // second order offset at actual temperature
-  int64_t  SENS = 0; // sensitivity at actual temperature
+  int32_t  dT    = 0; // difference between actual and measured temperature
+  int32_t  T2    = 0; // second order temperature offset
+  int64_t  OFF   = 0; // offset at actual temperature
+  int64_t  OFF2  = 0; // second order offset at actual temperature
+  int64_t  SENS  = 0; // sensitivity at actual temperature
   int64_t  SENS2 = 0; // second order sensitivity at actual temperature
 
   if (altADCConversion(ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ALT_ADC_D2+ui8OSR, &D2)) {
@@ -696,7 +696,7 @@ altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPr
     SENS=ui16Calibration[1]*pow(2,16)+dT*ui16Calibration[3]/pow(2,7);
 
     // Calculate temperature
-    *fTemp=2000+(dT*ui16Calibration[6])/pow(2,23)/100;
+    *fTemp=(2000+(dT*ui16Calibration[6])/pow(2,23))/100;
 
     // Calculate 2nd order temp difference, offset, and sensitivity (MS5607 2nd order algorithm)
     if (*fTemp < 20) {

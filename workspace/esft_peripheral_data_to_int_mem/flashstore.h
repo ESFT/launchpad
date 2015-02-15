@@ -21,8 +21,12 @@
 // This is part of revision 2.1.0.12573 of the DK-TM4C123G Firmware Package.
 //
 //*****************************************************************************
+
 #ifndef __FLASHSTORE_H__
 #define __FLASHSTORE_H__
+
+#include <stdbool.h>
+#include <stdint.h>
 
 //*****************************************************************************
 //
@@ -88,14 +92,14 @@ extern uint8_t  unpack_c0(uint32_t);
 extern uint8_t  unpack_c1(uint32_t);
 extern uint8_t  unpack_c2(uint32_t);
 extern uint8_t  unpack_c3(uint32_t);
-extern int32_t  flashstoreInit(void);
-extern int32_t  flashstoreNewLogFile(uint32_t ui32StartAddr, int);
-extern int32_t  flashstoreWriteRecord(uint8_t *, int);
+extern bool     flashstoreInit(bool);
+extern bool     flashstoreNewLogFile(uint32_t, bool);
+extern bool     flashstoreWriteRecord(uint8_t *, uint32_t);
 extern int32_t  flashstoreSave(void);
-extern void     flashstoreErase(void);
-static int32_t  flashstoreIsBlockFree(uint32_t ui32BaseAddr);
-extern int32_t  flashstoreFree(void);
-extern int32_t  flashstoreUsed(void);
+extern void     flashstoreFormat(void);
+static bool     flashstoreIsBlockFree(uint32_t);
+extern bool     flashstoreFree(void);
+extern bool     flashstoreUsed(void);
 extern uint32_t flashstoreGetData(uint32_t);
 extern uint32_t flashstoreGetCurrentAddr(void);
 extern void     flashstoreSetCurrentAddr(uint32_t);

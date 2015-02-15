@@ -22,12 +22,15 @@
 //
 //*****************************************************************************
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include "inc/hw_types.h"
 #include "driverlib/debug.h"
 #include "driverlib/flash.h"
+#include "driverlib/rom.h"
+#include "driverlib/rom_map.h"
+
 #include "flashstore.h"
 
 //*****************************************************************************
@@ -91,10 +94,10 @@ unpack_c3(uint32_t p)
 // special to do.
 //
 //*****************************************************************************
-int32_t
-flashstoreInit(void)
+bool
+flashstoreInit(bool overwrite)
 {
-  return flashstoreNewLogFile(0x0, 0);
+  return flashstoreNewLogFile(0x0, overwrite);
 }
 
 //*****************************************************************************
@@ -108,8 +111,8 @@ flashstoreInit(void)
 // the search.
 //
 //*****************************************************************************
-int32_t
-flashstoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
+bool
+flashstoreNewLogFile(uint32_t ui32StartAddr, bool overwrite)
 {
     uint32_t ui32Addr;
 
@@ -121,7 +124,7 @@ flashstoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
        (ui32StartAddr < FLASH_STORE_END_ADDR))
     {
         g_ui32StoreAddr = ui32StartAddr;
-        return 1;
+        return true;
     }
 
     //
@@ -159,7 +162,7 @@ flashstoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
     {
       if (!overwrite) return (0);
       ui32Addr = FLASH_STORE_START_ADDR;
-      FlashErase(ui32Addr);
+      MAP_FlashErase(ui32Addr);
     }
 
     //
@@ -198,12 +201,12 @@ flashstoreNewLogFile(uint32_t ui32StartAddr, int overwrite)
 // WARNING: THERE IS A MAXIMUM SIZE OF 255 CHARACTERS
 //
 //*****************************************************************************
-int32_t
-flashstoreWriteRecord(uint8_t *record, int size)
+bool
+flashstoreWriteRecord(uint8_t *record, uint32_t size)
 {
   if (g_ui32StoreAddr >= FLASH_STORE_END_ADDR)
   {
-	  return(0);
+	  return false;
   }
 
   uint32_t ui32Idx, *pui32Record, i;
@@ -231,11 +234,7 @@ flashstoreWriteRecord(uint8_t *record, int size)
 
   pui32Record = g_pui32RecordBuf;
 
-  //
-  // Now program the remaining part of the record (if we crossed a page
-  // boundary above) or the full record to the current location in flash
-  //
-  FlashProgram(pui32Record, g_ui32StoreAddr, recordSize);
+  MAP_FlashProgram(pui32Record, g_ui32StoreAddr, recordSize);
 
   //
   // Increment the storage address to the next location.
@@ -245,7 +244,7 @@ flashstoreWriteRecord(uint8_t *record, int size)
   //
   // Return success indication to caller.
   //
-  return 1;
+  return true;
 }
 
 //*****************************************************************************
@@ -254,7 +253,7 @@ flashstoreWriteRecord(uint8_t *record, int size)
 //
 //*****************************************************************************
 void
-flashstoreErase(void)
+flashstoreFormat(void)
 {
     uint32_t ui32Addr;
 
@@ -264,9 +263,8 @@ flashstoreErase(void)
     for(ui32Addr = FLASH_STORE_START_ADDR; ui32Addr < FLASH_STORE_END_ADDR;
         ui32Addr += FLASH_STORE_BLOCK_ERASE_SIZE)
     {
-        FlashErase(ui32Addr);
+        MAP_FlashErase(ui32Addr);
     }
-
 }
 
 //*****************************************************************************
@@ -274,7 +272,7 @@ flashstoreErase(void)
 // Determine if the flash block that contains the address is blank.
 //
 //*****************************************************************************
-static int32_t
+static bool
 flashstoreIsBlockFree(uint32_t ui32BaseAddr)
 {
     uint32_t ui32Addr;
@@ -295,7 +293,7 @@ flashstoreIsBlockFree(uint32_t ui32BaseAddr)
             // Found a non-blank location, so return indication that block
             // is not free.
             //
-            return 0;
+            return false;
         }
     }
 
@@ -303,7 +301,7 @@ flashstoreIsBlockFree(uint32_t ui32BaseAddr)
     // If we made it to here then every location in this block is erased,
     // so return indication that the block is free.
     //
-    return 1;
+    return true;
 }
 
 //*****************************************************************************
@@ -311,7 +309,7 @@ flashstoreIsBlockFree(uint32_t ui32BaseAddr)
 // Report to the user the amount of free space in the data storage area.
 //
 //*****************************************************************************
-int32_t
+bool
 flashstoreFree(void)
 {
     uint32_t ui32Addr, ui32FreeBlocks = 0;
@@ -337,27 +335,11 @@ flashstoreFree(void)
 // Report to the user the amount of used space in the data storage area.
 //
 //*****************************************************************************
-int32_t
+bool
 flashstoreUsed(void)
 {
-    uint32_t ui32Addr, ui32UsedBlocks = 0;
-
-    //
-    // Loop through each block of the storage area and count how many blocks
-    // are free and non-free.
-    //
-    for(ui32Addr = FLASH_STORE_START_ADDR; ui32Addr < FLASH_STORE_END_ADDR;
-        ui32Addr += FLASH_STORE_BLOCK_ERASE_SIZE)
-    {
-        if(!flashstoreIsBlockFree(ui32Addr))
-        {
-            ui32UsedBlocks++;
-        }
-    }
-
-    return ui32UsedBlocks;
+    return !flashstoreFree();
 }
-
 
 //*****************************************************************************
 //

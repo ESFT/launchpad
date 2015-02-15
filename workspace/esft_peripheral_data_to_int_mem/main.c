@@ -93,12 +93,12 @@ bool I2CWrite(uint8_t ui8Data);
 bool I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size);
 bool I2CBurstWrite(uint8_t ui8SendData[], uint32_t ui32Size);
 
+#ifdef DEBUG
 //*****************************************************************************
 //
 // The error routine that is called if the driver library encounters an error.
 //
 //*****************************************************************************
-#ifdef DEBUG
 void
 __error__(char *pcFilename, uint32_t ui32Line) {
 
@@ -188,7 +188,6 @@ main(void) {
 
   //
   // Enable the altimeter
-  // TODO: fix code to read from altimeter
   //
   altInit();
 
@@ -222,43 +221,40 @@ main(void) {
     accelReceive(&accelData);
 
     //
+    // Get data from altimeter
+    //
+    altDataReceived = altReceive(ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
+
+    //
     // Get data from GPS
     //
     gpsDataReceived = gpsReceive(&gpsSentence[0]);
 
-    //
-    // Get data from altimeter
-    //
-    altDataReceived = altReceive(ALT_ADC_256, altCalibration, &altTemperature, &altPressure, &altAltitude);
-
     flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "Accelerometer: %d\n\r", accelData);
+    if (altDataReceived) { // altimeter data was received
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sTemperature: %f C\n\rPressure: %f mbar\n\rAltitude: %f ft\n\r", flashWriteBuffer, altTemperature, altPressure, altAltitude);
+    }
     if (gpsDataReceived) { // gps data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sGPS: %s\n\r", flashWriteBuffer, gpsSentence);
-    }
-    if (altDataReceived) { // altimeter data was received
-      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sTemperature: %f C\n\rPressure: %f mbar\n\rAltitude: %f\n\r", flashWriteBuffer, altTemperature, altPressure, altAltitude);
     }
 
     //
     // Send write buffer over UART for debugging
     //
-    UARTprintf("%s", flashWriteBuffer);
+    // UARTprintf("%s", flashWriteBuffer);
 
     //
     // Write data to flash
     //
     FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
 
-    test++;
     if (test > 5) break;
-
   } // main while end
 
   beep(OUT_OF_FLASH);
 
   // Out of flash memory. Output flash memory to console
-  while (true)
-  {
+  while (true) {
     flashPackedChar = flashstoreGetData(flashCurrAddr);
     if((flashPackedChar & 0xFFFFFF00) == flashHeader) {
       flashRecordSize = flashPackedChar & 0xFF;
@@ -268,13 +264,12 @@ main(void) {
         unpack(flashPackedChar, &flashWriteBuffer[0]);
         UARTprintf("%s", flashWriteBuffer);
       }
-    } else {
-      flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
-    }
-    if (flashCurrAddr >= FLASH_STORE_END_ADDR) {
+    } else if (flashCurrAddr >= FLASH_STORE_END_ADDR) {
       flashCurrAddr = FLASH_STORE_START_ADDR;
       UARTprintf("*\n\r");
       delay(5000);
+    } else {
+      flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
     }
   }
 }
@@ -501,7 +496,7 @@ altInit(void) {
   //
   // Configure I2C0.
   //
-  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_400);
+  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_100);
 
   //
   // Enable I2C0 Master Block
@@ -587,7 +582,7 @@ bool
 altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   uint32_t ret[3];
 
-  if (!I2CWrite(ALT_ADC_CONV & ui8Cmd)) {
+  if (!I2CWrite(ALT_ADC_CONV+ui8Cmd)) {
     beep(ALT_ADC_CONV_ERR);
     UARTprintf("ALT_ADC_CONV write error\n\r");
     return false;
@@ -845,15 +840,16 @@ I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size) {
     while(MAP_I2CMasterBusy(I2C0_BASE)) {};
 
     //
+    // Check for errors.
+    //
+    if (MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return false;
+
+    //
     // Move byte from register
     //
     ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(I2C0_BASE);
   }
 
-  //
-  // Check for errors.
-  //
-  if (MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return false;
 
   //
   // Return 1 if there is no error.

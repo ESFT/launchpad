@@ -202,6 +202,8 @@ flashstoreWriteRecord(uint8_t *record, uint32_t size)
   //
   uint32_t recordSize = FLASH_STORE_RECORD_HEADER_SIZE + size + (FLASH_STORE_BLOCK_WRITE_SIZE - (size % FLASH_STORE_BLOCK_WRITE_SIZE)) % FLASH_STORE_BLOCK_WRITE_SIZE;
 
+  if (pui32Record + recordSize >= FLASH_STORE_START_ADDR) return false; // Flash storage limit reached
+
   //
   // Create the flash record header, which is a 3-byte signature and a
   // one byte count of bytes in the record (excluding the header).

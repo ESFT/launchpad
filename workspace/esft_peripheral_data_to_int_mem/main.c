@@ -120,9 +120,8 @@ main(void) {
   // Flash storage variables
   //
   bool     FreeSpaceAvailable;
-  uint32_t flashStartAddr = FLASH_STORE_START_ADDR; // Starting address of flash storage
-  uint32_t flashEndAddr = FLASH_STORE_END_ADDR; // Ending address of flash storage
-  uint32_t flashCurrAddr = flashStartAddr; // Current address in flash storage for read. Initialize to starting address
+  uint32_t index;
+  uint32_t flashCurrAddr = FLASH_STORE_START_ADDR; // Current address in flash storage for read. Initialize to starting address
   uint32_t flashHeader = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
   uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
   uint32_t flashRecordSize; // Size of the current flash record
@@ -212,6 +211,8 @@ main(void) {
     }
   }
 
+
+  uint32_t test = 1;
   while(FreeSpaceAvailable) {
     beep(RUNNING);
 
@@ -229,7 +230,6 @@ main(void) {
     // Get data from altimeter
     //
     altDataReceived = altReceive(ALT_ADC_256, altCalibration, &altTemperature, &altPressure, &altAltitude);
-
 
     flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "Accelerometer: %d\n\r", accelData);
     if (gpsDataReceived) { // gps data was received
@@ -249,6 +249,9 @@ main(void) {
     //
     FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
 
+    test++;
+    if (test > 5) break;
+
   } // main while end
 
   beep(OUT_OF_FLASH);
@@ -259,16 +262,17 @@ main(void) {
     flashPackedChar = flashstoreGetData(flashCurrAddr);
     if((flashPackedChar & 0xFFFFFF00) == flashHeader) {
       flashRecordSize = flashPackedChar & 0xFF;
-      for (; flashCurrAddr < (flashCurrAddr + flashRecordSize); flashCurrAddr += 0x04) {
+      for (index = 0; index < flashRecordSize; index++) {
+        flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
         flashPackedChar = flashstoreGetData(flashCurrAddr);
-        UARTprintf("%c%c%c%c", unpack_c0(flashPackedChar), unpack_c1(flashPackedChar), unpack_c2(flashPackedChar), unpack_c3(flashPackedChar));
+        unpack(flashPackedChar, &flashWriteBuffer[0]);
+        UARTprintf("%s", flashWriteBuffer);
       }
-      UARTprintf("\n\r");
     } else {
-      flashCurrAddr += 0x04;
+      flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
     }
-    if (flashCurrAddr >= flashEndAddr) {
-      flashCurrAddr = flashStartAddr;
+    if (flashCurrAddr >= FLASH_STORE_END_ADDR) {
+      flashCurrAddr = FLASH_STORE_START_ADDR;
       UARTprintf("*\n\r");
       delay(5000);
     }

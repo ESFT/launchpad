@@ -52,7 +52,7 @@ static uint32_t g_ui32StoreAddr;
 // in the flash.
 //
 //*****************************************************************************
-static uint32_t g_pui32RecordBuf[25];
+static uint32_t g_pui32RecordBuf[32];
 
 //*****************************************************************************
 //
@@ -64,28 +64,14 @@ pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3) {
     return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
 };
 
-uint8_t
-unpack_c0(uint32_t p)
+void
+unpack(uint32_t p, uint8_t* buffer)
 {
-    return p >> 24;
-}
-
-uint8_t
-unpack_c1(uint32_t p)
-{
-    return p >> 16;
-}
-
-uint8_t
-unpack_c2(uint32_t p)
-{
-    return p >> 8;
-}
-
-uint8_t
-unpack_c3(uint32_t p)
-{
-    return p;
+  buffer[0] = p >> 24;
+  buffer[1] = p >> 16;
+  buffer[2] = p >> 8;
+  buffer[3] = p;
+  buffer[4] = '\0';
 }
 
 //*****************************************************************************
@@ -210,25 +196,25 @@ flashstoreWriteRecord(uint8_t *record, uint32_t size)
   }
 
   uint32_t ui32Idx, *pui32Record, i;
+
   //
   // Convert the count to bytes, be sure to pad to 32-bit alignment.
   //
-  uint32_t recordSize = size + FLASH_STORE_BLOCK_WRITE_SIZE + (FLASH_STORE_BLOCK_WRITE_SIZE - (size % FLASH_STORE_BLOCK_WRITE_SIZE)) % FLASH_STORE_BLOCK_WRITE_SIZE;
+  uint32_t recordSize = FLASH_STORE_RECORD_HEADER_SIZE + size + (FLASH_STORE_BLOCK_WRITE_SIZE - (size % FLASH_STORE_BLOCK_WRITE_SIZE)) % FLASH_STORE_BLOCK_WRITE_SIZE;
 
   //
   // Create the flash record header, which is a 3-byte signature and a
-  // one byte count of bytes in the record.  Save it at the beginning
-  // of the write buffer.
+  // one byte count of bytes in the record (excluding the header).
+  // Save it at the beginning of the write buffer.
   //
-  ui32Idx = FLASH_STORE_RECORD_HEADER | ((recordSize) & 0xFF);
+  ui32Idx = FLASH_STORE_RECORD_HEADER | (((recordSize/4) - 1) & 0xFF);
   g_pui32RecordBuf[0] = ui32Idx;
 
   //
   // Pack chars into record buffer
   //
-  for (i=0; i < (size / 4); i++)
+  for (i=0; i < ((recordSize-FLASH_STORE_RECORD_HEADER_SIZE) / 4); i++)
   {
-
     g_pui32RecordBuf[i+1] = pack(record[i*4], record[(i*4)+1], record[(i*4)+2], record[(i*4)+3]);
   }
 

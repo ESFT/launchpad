@@ -81,6 +81,7 @@ extern "C"
 //
 //*****************************************************************************
 #define FLASH_STORE_RECORD_HEADER 0x53554100
+#define FLASH_STORE_RECORD_HEADER_SIZE 0x04
 
 //*****************************************************************************
 //
@@ -88,10 +89,7 @@ extern "C"
 //
 //*****************************************************************************
 extern uint32_t pack(uint8_t, uint8_t, uint8_t, uint8_t);
-extern uint8_t  unpack_c0(uint32_t);
-extern uint8_t  unpack_c1(uint32_t);
-extern uint8_t  unpack_c2(uint32_t);
-extern uint8_t  unpack_c3(uint32_t);
+extern void     unpack(uint32_t, uint8_t*);
 extern bool     flashstoreInit(bool);
 extern bool     flashstoreNewLogFile(uint32_t, bool);
 extern bool     flashstoreWriteRecord(uint8_t *, uint32_t);

@@ -210,8 +210,6 @@ main(void) {
     }
   }
 
-
-  uint32_t test = 1;
   while(FreeSpaceAvailable) {
     beep(RUNNING);
 
@@ -247,8 +245,6 @@ main(void) {
     // Write data to flash
     //
     FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
-
-    if (test > 5) break;
   } // main while end
 
   beep(OUT_OF_FLASH);

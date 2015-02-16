@@ -49,8 +49,8 @@ extern "C"
 // storage.
 //
 //*****************************************************************************
-#define FLASH_STORE_START_ADDR  0x30000
-#define FLASH_STORE_END_ADDR    0x40000
+#define FLASH_STORE_START_ADDR  0x00010000
+#define FLASH_STORE_END_ADDR    0x00030000
 
 //*****************************************************************************
 //

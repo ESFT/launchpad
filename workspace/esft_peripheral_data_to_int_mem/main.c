@@ -281,6 +281,7 @@ main(void) {
   } // main while end
 
   // Out of flash memory. Output flash memory to console
+  // TODO: FIX FLASH MEMORY TO PREVENT FAULT ISR ON READ
   while (true) {
     setStatus(OUT_OF_FLASH);
     flashPackedChar = flashstoreGetData(flashCurrAddr);

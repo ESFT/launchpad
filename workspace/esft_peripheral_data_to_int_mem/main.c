@@ -659,6 +659,7 @@ gpsReceive(uint8_t* ui8Buffer) {
           if (newChar == '*')  break; // If the character is a star, break the loop
           ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
         }
+        ui8Buffer[ui32bIndex] = ','; ui32bIndex++; // Delimit checksum data
         ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 1st checksum number
         ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 2nd checksum number
 

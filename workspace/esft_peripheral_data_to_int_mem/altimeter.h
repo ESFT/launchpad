@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-// altimeter.c
+// altimeter.h
 //
 // This file defines commands for the MS5607 Altimeter Module
 //

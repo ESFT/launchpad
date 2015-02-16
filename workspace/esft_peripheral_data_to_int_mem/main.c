@@ -61,17 +61,18 @@
 #define ALT_SPEED   I2C_SPEED_400
 
 // Gyro
+#define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
 #define GYRO_BASE  I2C1_BASE
 #define GYRO_SPEED I2C_SPEED_400
 
 // LED Colors
-#define RED_LED GPIO_PIN_1
-#define BLUE_LED GPIO_PIN_2
-#define GREEN_LED GPIO_PIN_3
-#define YELLOW_LED RED_LED | GREEN_LED
-#define MAGENTA_LED RED_LED | BLUE_LED
-#define CYAN_LED GREEN_LED | BLUE_LED
-#define WHITE_LED RED_LED | GREEN_LED | BLUE_LED
+#define RED_LED     GPIO_PIN_1
+#define BLUE_LED    GPIO_PIN_2
+#define GREEN_LED   GPIO_PIN_3
+#define YELLOW_LED  RED_LED   | GREEN_LED
+#define MAGENTA_LED RED_LED   | BLUE_LED
+#define CYAN_LED    GREEN_LED | BLUE_LED
+#define WHITE_LED   RED_LED   | GREEN_LED | BLUE_LED
 
 //*****************************************************************************
 //
@@ -171,18 +172,18 @@ main(void) {
   //
   // GPS Variables
   //
-  bool     gpsDataReceived;
-  uint8_t  gpsSentence[128];
+  bool     gpsDataReceived;  // GPS data has been received
+  uint8_t  gpsSentence[128]; // GPS NMEA sentence
 
   //
   // Accelerometer variables
   //
-  uint32_t accelData;
+  uint32_t accelData; // Accelerometer data
 
   //
   // Altimeter variables
   //
-  bool     altDataReceived;
+  bool     altDataReceived;   // Altimeter data has been received
   uint16_t altCalibration[8]; // calibration coefficients
   uint8_t  altCRC;            // calculated CRC
   float    altTemperature;    // compensated temperature value

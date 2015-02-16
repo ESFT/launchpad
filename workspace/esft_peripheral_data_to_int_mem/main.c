@@ -51,9 +51,9 @@
 
 // I2C
 #define I2C_MODE_WRITE false
-#define I2C_MODE_READ true
-#define I2C_SPEED_100 false
-#define I2C_SPEED_400 true
+#define I2C_MODE_READ  true
+#define I2C_SPEED_100  false
+#define I2C_SPEED_400  true
 
 // Altimeter
 #define ALT_BASE    I2C0_BASE
@@ -61,9 +61,9 @@
 #define ALT_SPEED   I2C_SPEED_400
 
 // Gyro
+#define GYRO_BASE    I2C1_BASE
 #define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
-#define GYRO_BASE  I2C1_BASE
-#define GYRO_SPEED I2C_SPEED_400
+#define GYRO_SPEED   I2C_SPEED_400
 
 // LED Colors
 #define RED_LED     GPIO_PIN_1
@@ -76,34 +76,35 @@
 
 //*****************************************************************************
 //
-// "Beep" Codes (Uses LED)
-// See ESFT Error Codes Spreadsheet for more information
+// Status Codes (Uses LED)
+// See ESFT Status Codes Spreadsheet for more information
 //
 //*****************************************************************************
 
 // Determines if beep codes are enabled. Comment out to disable functionality
-#define BEEP_CODES_ENABLED
+#define STATUS_CODES_ENABLED
 
-// multiplier of "dot" and "dash" blinks in terms of interrupt lengths
-#define BEEP_DOT 1
-#define BEEP_DASH 3
+// multiplier of "dot" and "dash" blinks in terms of interrupt count (E.G. 1 = 250ms @ 4mhz)
+#define STATUS_DOT  1
+#define STATUS_DASH 3
 
 // Multiplier of the interrupt clock to delimit status codes (E.G. 3 = 750ms @ 4mhz)
-#define BEEP_DELIMTER_MULTIPLIER 3
+#define STATUS_DELIMTER_MULTIPLIER 3
 
+// Status Codes
 typedef enum STATUSCODE {
     INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
     ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
     ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
   } StatusCode_t;
 
-static StatusCode_t statusCode = INITIALIZING;
-static uint8_t    statusColor;
-static uint32_t   statusBlinkDelay[3];
-static uint8_t    statusBeepIndex = 0; // Index of beep LED
-static uint32_t   statusDelayIndex = 0; // Index of beep length
-static bool       statusBusy = false;
-static bool       statusLEDOn = false;
+static StatusCode_t statusCode = INITIALIZING; // Current Status Code
+static uint8_t      statusColor;               // Status Code Color
+static uint32_t     statusBlinkDelay[3];       // Status Code Delays
+static uint8_t      statusBeepIndex = 0;       // Index of beep LED
+static uint32_t     statusDelayIndex = 0;      // Index of beep length
+static bool         statusBusy = false;        // Beep code system is busy
+static bool         statusLEDOn = false;       // Status of the LED
 
 //*****************************************************************************
 //
@@ -129,6 +130,7 @@ bool altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uin
 uint8_t altCRC4(uint16_t ui16nProm[8]);
 bool altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
 bool altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+bool gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr);
 void I2CInit(uint32_t ui32Base, bool bSpeed);
 bool I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptr32Data);
 bool I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8Data);
@@ -334,7 +336,7 @@ delay(uint32_t ui32ms) { // Delay in milliseconds
   MAP_SysCtlDelay((MAP_SysCtlClockGet()/(3*1000))*ui32ms);
 }
 bool
-setStatus(StatusCode_t scStatus) {
+setStatus(StatusCode_t scStatus) { // Set status code
   if (!statusBusy) {
     statusCode = scStatus;
     return true;
@@ -360,78 +362,78 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
     switch (statusCode) {
       case INITIALIZING: { // device is initializing
         statusColor = WHITE_LED;
-        statusBlinkDelay[0] = BEEP_DASH;
-        statusBlinkDelay[1] = BEEP_DASH;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case RUNNING: { // code is running
         statusColor = GREEN_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DOT;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case DRL_ERR: { // driver library encountered an error
         statusColor = RED_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DOT;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_CRC_ERR: { // altimeter calibration error
         statusColor = RED_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case OUT_OF_FLASH: { // out of flash memory
         statusColor = BLUE_LED;
-        statusBlinkDelay[0] = BEEP_DASH;
-        statusBlinkDelay[1] = BEEP_DASH;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case ALT_ADC_CONV_ERR: { // ALT_ADC_CONV error
         statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DOT;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_ADC_R_WRITE_ERR: { // ALT_ADC_READ write error
         statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case ALT_ADC_R_READ_ERR: { // ALT_ADC_READ read error
           statusColor = YELLOW_LED;
-          statusBlinkDelay[0] = BEEP_DOT;
-          statusBlinkDelay[1] = BEEP_DASH;
-          statusBlinkDelay[2] = BEEP_DOT;
+          statusBlinkDelay[0] = STATUS_DOT;
+          statusBlinkDelay[1] = STATUS_DASH;
+          statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_PROM_R_WRITE_ERR: { // ALT_PROM_READ write error
         statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DASH;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case ALT_PROM_R_READ_ERR: { // ALT_PROM_READ read error
         statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = BEEP_DASH;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DOT;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_RESET_ERR: { // ALT_RESET error
         statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = BEEP_DASH;
-        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = BEEP_DASH;
         break;
       }
@@ -454,7 +456,7 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
         statusDelayIndex = 0;
         statusBeepIndex++;
     }
-  } else if (statusBeepIndex < 3+BEEP_DELIMTER_MULTIPLIER) {
+  } else if (statusBeepIndex < 3+STATUS_DELIMTER_MULTIPLIER) {
     statusBeepIndex++;
   } else {
     statusBeepIndex = 0;
@@ -578,6 +580,8 @@ gyroInit(void) {
   // Enable the I2C module used by the gyro
   //
   I2CInit(GYRO_BASE, GYRO_SPEED);
+
+  gyroStartup(GYRO_BASE, GYRO_ADDRESS));
 }
 void
 statusCodeInterruptEnable(void) {
@@ -828,6 +832,24 @@ altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16C
   return false;
 }
 void
+gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr) {
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG2);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG3);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG4);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG6);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_REFERENCE);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_THS);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_DUR);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_CFG);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG5);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG1);
+}
+bool
+gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr) {
+  // TODO: Create Gyro Recieve code
+  return false;
+}
+void
 I2CInit(uint32_t ui32Base, bool bSpeed) {
   switch(ui32Base) {
     case I2C0_BASE: {
@@ -906,7 +928,6 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
       break;
     }
   }
-
   //
   // Enable the supplied I2C Base Clock
   //

@@ -261,27 +261,35 @@ main(void) {
     //
     gpsDataReceived = gpsReceive(&gpsSentence[0]);
 
-    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "Accelerometer: %d\n\r", accelData);
+    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%d,", accelData);
     if (altDataReceived) { // altimeter data was received
-      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sTemperature: %f C\n\rPressure: %f mbar\n\rAltitude: %f ft\n\r", flashWriteBuffer, altTemperature, altPressure, altAltitude);
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
     }
     if (gpsDataReceived) { // gps data was received
-      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%sGPS: %s\n\r", flashWriteBuffer, gpsSentence);
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%s,", flashWriteBuffer, gpsSentence);
     }
+    flashWriteBuffer[flashWriteBufferSize-1] = '\n'; // Overwrite last comma with a \n
+    flashWriteBuffer[flashWriteBufferSize] = '\r'; // Add a \r
+    flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Terminate string with a null
 
     //
     // Send write buffer over UART for debugging
     //
     // UARTprintf("%s", flashWriteBuffer);
+    // delay(1000);
 
     //
     // Write data to flash
     //
     FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
+
   } // main while end
 
+  //
   // Out of flash memory. Output flash memory to console
-  // TODO: FIX FLASH MEMORY TO PREVENT FAULT ISR ON READ
+  //
+
+  UARTprintf("Accelerometer,Temperature,Pressure,Altitude,Identifier,Time,Latitude,Longitude,Fix Quality,Num of Sats,HDOP,GPS Altitude,Height of geoid above WGS84 ellipsoid, Time since DGPS,DGPS reference,Checksum\n\r");
   while (true) {
     setStatus(OUT_OF_FLASH);
     flashPackedChar = flashstoreGetData(flashCurrAddr);
@@ -293,12 +301,12 @@ main(void) {
         unpack(flashPackedChar, &flashWriteBuffer[0]);
         UARTprintf("%s", flashWriteBuffer);
       }
-    } else if (flashCurrAddr >= FLASH_STORE_END_ADDR) {
+    }
+    flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
+    if (flashCurrAddr >= FLASH_STORE_END_ADDR) {
       flashCurrAddr = FLASH_STORE_START_ADDR;
-      UARTprintf("*\n\r");
       delay(5000);
-    } else {
-      flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
+      UARTprintf("Accelerometer,Temperature,Pressure,Altitude,Identifier,Time,Latitude,Longitude,Fix Quality,Num of Sats,HDOP,GPS Altitude,Height of geoid above WGS84 ellipsoid, Time since DGPS,DGPS reference,Checksum\n\r");
     }
   }
 }
@@ -339,9 +347,9 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
     switch (statusCode) {
       case INITIALIZING: { // device is initializing
         statusColor = WHITE_LED;
-        statusBlinkDelay[0] = BEEP_DOT;
-        statusBlinkDelay[1] = BEEP_DOT;
-        statusBlinkDelay[2] = BEEP_DOT;
+        statusBlinkDelay[0] = BEEP_DASH;
+        statusBlinkDelay[1] = BEEP_DASH;
+        statusBlinkDelay[2] = BEEP_DASH;
         break;
       }
       case RUNNING: { // code is running
@@ -651,13 +659,11 @@ gpsReceive(uint8_t* ui8Buffer) {
           if (newChar == '*')  break; // If the character is a star, break the loop
           ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
         }
-
-        // Collect the checksum data
-        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++;
-        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++;
+        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 1st checksum number
+        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 2nd checksum number
 
         // Add null terminator to end of GPS data
-        ui8Buffer[ui32bIndex] = '\0'; ui32bIndex++;
+        ui8Buffer[ui32bIndex] = '\0';
         MAP_IntMasterEnable();
         return true;
       }
@@ -818,6 +824,7 @@ altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16C
     *fPressure=((D1*SENS)/pow(2,21)-OFF)/pow(2,15)/100;
 
     // Calculate altitude (in feet)
+    // TODO: Convert to meters
     *fAltitude = (1-pow((*fPressure/1013.25),.190284))*145366.45;
     return true;
   }

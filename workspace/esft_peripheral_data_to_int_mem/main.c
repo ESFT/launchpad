@@ -49,6 +49,7 @@
 //*****************************************************************************
 
 // Altimeter
+#define ALT_BASE    I2C0_BASE
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 
 // I2C
@@ -66,10 +67,6 @@
 #define CYAN_LED GREEN_LED | BLUE_LED
 #define WHITE_LED RED_LED | GREEN_LED | BLUE_LED
 
-// LED time (ms)
-#define DOT 250
-#define DASH 750
-
 //*****************************************************************************
 //
 // "Beep" Codes (Uses LED)
@@ -80,11 +77,26 @@
 // Determines if beep codes are enabled. Comment out to disable functionality
 #define BEEP_CODES_ENABLED
 
-typedef enum BEEPCODE {
+typedef enum STATUSCODE {
   INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
   ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
   ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
-  } BeepCode;
+  } StatusCode_t;
+
+// multiplier of "dot" and "dash" blinks in terms of interrupt lengths
+#define BEEP_DOT 1
+#define BEEP_DASH 3
+
+// Multiplier of the interrupt clock to delimit status codes (E.G. 3 = 750ms @ 4mhz)
+#define BEEP_DELIMTER_MULTIPLIER 3
+
+static StatusCode_t statusCode = INITIALIZING;
+static uint8_t    statusColor;
+static uint32_t   statusBlinkDelay[3];
+static uint8_t    statusBeepIndex = 0; // Index of beep LED
+static uint32_t   statusDelayIndex = 0; // Index of beep length
+static bool       statusBusy = false;
+static bool       statusLEDOn = false;
 
 //*****************************************************************************
 //
@@ -93,41 +105,26 @@ typedef enum BEEPCODE {
 //*****************************************************************************
 void LEDOn(uint8_t ui8Color);
 void LEDOff(uint8_t ui8Color);
+bool setStatus(StatusCode_t scStatus);
 void FPUInit(void);
 void LEDInit(void);
 void consoleInit(void);
 void gpsInit(void);
 void accelInit(void);
 void altInit(void);
-void timerInterruptsEnable(void);
+void statusCodeInterruptEnable(void);
 void delay(uint32_t);
 bool gpsReceive(uint8_t* ui8Buffer);
 void accelReceive(uint32_t* ui32ptrData);
-bool altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude);
-bool altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
+bool altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude);
+bool altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData);
 uint8_t altCRC4(uint16_t ui16nProm[8]);
-bool altProm(uint16_t ui16nProm[8]);
-bool altReset(void);
-bool I2CRead(uint32_t* ui32ptr32Data);
-bool I2CWrite(uint8_t ui8Data);
-bool I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size);
-bool I2CBurstWrite(uint8_t ui8SendData[], uint32_t ui32Size);
-
-//*****************************************************************************
-//
-// Global variables used by interrupts
-//
-//*****************************************************************************
-uint8_t  color;
-uint32_t  blinkDelay[3];
-uint8_t  timeDelay = 0;
-uint8_t  delayIteration = 0;
-BeepCode errorCode = INITIALIZING;
-bool     LEDStatus = false;
-bool     blink[3] = {false};
-bool     blinkWait = false;
-bool     waitTwo = false;
-bool     LEDEndOff = false;
+bool altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
+bool altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+bool I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptr32Data);
+bool I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8Data);
+bool I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size);
+bool I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size);
 
 #ifdef DEBUG
 //*****************************************************************************
@@ -140,7 +137,7 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 
   while(true) {
     UARTprintf("Error at line %d of %s\n\r", ui32Line, pcFilename);
-    errorCode = DRL_ERR;
+    setStatus(DRL_ERR);
   };
 }
 #endif
@@ -201,6 +198,11 @@ main(void) {
   LEDInit();
 
   //
+  // Enable timer interrupts
+  //
+  statusCodeInterruptEnable();
+
+  //
   // Enable the FPU
   //
   FPUInit();
@@ -229,28 +231,21 @@ main(void) {
   // Enable flash storage
   //
   FreeSpaceAvailable = flashstoreInit(false);
-  
-  //
-  // Enable timer interrupts
-  //
-  timerInterruptsEnable();
 
   //
   ///////////////////Gather Data/////////////////////////////
   //
 
-  while (!altProm(altCalibration)) {}; // read coefficients
+  while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {}; // read coefficients
   altCRC = altCRC4(altCalibration); // calculate the CRC.
 
-  if (altCRC == (altCalibration[7] & 0xFF00)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
+  if (!(altCRC == (altCalibration[7] & 0x000F))) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
     while (true) {
-      errorCode = ALT_CRC_ERR;
+      setStatus(ALT_CRC_ERR);
     }
   }
 
   while(FreeSpaceAvailable) {
-    errorCode = RUNNING;
-
     //
     // Get data from accelerometer
     //
@@ -259,7 +254,7 @@ main(void) {
     //
     // Get data from altimeter
     //
-    altDataReceived = altReceive(ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
+    altDataReceived = altReceive(ALT_BASE, ALT_ADDRESS, ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
 
     //
     // Get data from GPS
@@ -285,11 +280,9 @@ main(void) {
     FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
   } // main while end
 
-  errorCode = OUT_OF_FLASH;
-
   // Out of flash memory. Output flash memory to console
   while (true) {
-    ROM_IntMasterDisable();
+    setStatus(OUT_OF_FLASH);
     flashPackedChar = flashstoreGetData(flashCurrAddr);
     if((flashPackedChar & 0xFFFFFF00) == flashHeader) {
       flashRecordSize = flashPackedChar & 0xFF;
@@ -306,7 +299,6 @@ main(void) {
     } else {
       flashCurrAddr += FLASH_STORE_BLOCK_WRITE_SIZE;
     }
-    ROM_IntMasterEnable();
   }
 }
 
@@ -316,178 +308,139 @@ main(void) {
 //
 //*****************************************************************************
 void
-delay(uint32_t ui32ms) {
+delay(uint32_t ui32ms) { // Delay in milliseconds
   MAP_SysCtlDelay((MAP_SysCtlClockGet()/(3*1000))*ui32ms);
 }
-
-//
-// timer interrupt to handle beep codes
-//
+bool
+setStatus(StatusCode_t scStatus) {
+  if (!statusBusy) {
+    statusCode = scStatus;
+    return true;
+  }
+  return false;
+}
 void
-Timer0IntHandler(void)
-{
+Timer0IntHandler(void) { // timer interrupt to handle beep codes
+
+  MAP_IntMasterDisable();
+
   //
   // Clear the timer interrupt.
   //
   ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-  
-  ROM_IntMasterDisable();
-  
-  //
-  // LED functionality enabled
-  //
-  #ifdef BEEP_CODES_ENABLED
-  
-  //
-  // set color and delay
-  //
-  switch (errorCode) {
-    case INITIALIZING: { // device is initializing
-      color = WHITE_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DOT;
-      break;
-    }
-    case RUNNING: { // code is running
-      color = GREEN_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DOT;
-      break;
-    }
-    case DRL_ERR: { // driver library encountered an error
-      color = RED_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DOT;
-      break;
-    }
-    case ALT_CRC_ERR: { // altimeter calibration error
-      color = RED_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DASH;
-      break;
-    }
-    case OUT_OF_FLASH: { // out of flash memory
-      color = BLUE_LED;
-      blinkDelay[0] = DASH;
-      blinkDelay[1] = DASH;
-      blinkDelay[2] = DASH;
-      break;
-    }
-    case ALT_ADC_CONV_ERR: { // ALT_ADC_CONV error
-      color = YELLOW_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DOT;
-      break;
-    }
-    case ALT_ADC_R_WRITE_ERR: { // ALT_ADC_READ write error
-      color = YELLOW_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DASH;
-      break;
-    }
-    case ALT_ADC_R_READ_ERR: { // ALT_ADC_READ read error
-        color = YELLOW_LED;
-        blinkDelay[0] = DOT;
-        blinkDelay[1] = DASH;
-        blinkDelay[2] = DOT;
-      break;
-    }
-    case ALT_PROM_R_WRITE_ERR: { // ALT_PROM_READ write error
-      color = YELLOW_LED;
-      blinkDelay[0] = DOT;
-      blinkDelay[1] = DASH;
-      blinkDelay[2] = DASH;
-      break;
-    }
-    case ALT_PROM_R_READ_ERR: { // ALT_PROM_READ read error
-      color = YELLOW_LED;
-      blinkDelay[0] = DASH;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DOT;
-      break;
-    }
-    case ALT_RESET_ERR: { // ALT_RESET error
-      color = YELLOW_LED;
-      blinkDelay[0] = DASH;
-      blinkDelay[1] = DOT;
-      blinkDelay[2] = DASH;
-      break;
-    }
-  }//switch(code)
-  
-  //
-  // blink LED
-  //
-  if(blink[0] == false && LEDStatus == false && timeDelay == 0) {
-          LEDOff(WHITE_LED); //remove debug code
-          LEDOn(color);
-	  blink[0] = true;
-  }
-  else if(blink[1] == false && LEDStatus == false && timeDelay == 0) {
-	  LEDOn(color);
-	  blink[1] = true;
-  }
-  else if(blink[2] == false && LEDStatus == false && timeDelay == 0) {
-	  LEDOn(color);
-	  blink[2] = true;
-  }
-  else if(timeDelay == 0 && LEDStatus == true && LEDEndOff == false) {
-    LEDEndOff = true;
-  }
-  
-  //long delay after blink code
-  if(blink[2] == true && timeDelay == 0 && LEDStatus == true) {
-    blinkWait = true;
-  }
-  
-  //
-  // toggle LEDStatus when necessary
-  //
-  if(((blinkDelay[delayIteration] == DASH) && (timeDelay <=3) && (LEDStatus == true)) || (blinkWait == true) && (timeDelay<=3)) {
-	  timeDelay++;
-  }
-  else {
-      timeDelay = 0; // reset timeDelay
-      LEDStatus = LEDStatus ? false : true; // toggle LEDStatus
-      if(delayIteration < 3 && LEDStatus == true) {
-    	  delayIteration++; // move to the next blink of error code
+
+
+  if (!statusBusy) {
+    statusBusy = true;
+    //
+    // set color and delay
+    //
+    switch (statusCode) {
+      case INITIALIZING: { // device is initializing
+        statusColor = WHITE_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DOT;
+        break;
       }
+      case RUNNING: { // code is running
+        statusColor = GREEN_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DOT;
+        break;
+      }
+      case DRL_ERR: { // driver library encountered an error
+        statusColor = RED_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DOT;
+        break;
+      }
+      case ALT_CRC_ERR: { // altimeter calibration error
+        statusColor = RED_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DASH;
+        break;
+      }
+      case OUT_OF_FLASH: { // out of flash memory
+        statusColor = BLUE_LED;
+        statusBlinkDelay[0] = BEEP_DASH;
+        statusBlinkDelay[1] = BEEP_DASH;
+        statusBlinkDelay[2] = BEEP_DASH;
+        break;
+      }
+      case ALT_ADC_CONV_ERR: { // ALT_ADC_CONV error
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DOT;
+        break;
+      }
+      case ALT_ADC_R_WRITE_ERR: { // ALT_ADC_READ write error
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DASH;
+        break;
+      }
+      case ALT_ADC_R_READ_ERR: { // ALT_ADC_READ read error
+          statusColor = YELLOW_LED;
+          statusBlinkDelay[0] = BEEP_DOT;
+          statusBlinkDelay[1] = BEEP_DASH;
+          statusBlinkDelay[2] = BEEP_DOT;
+        break;
+      }
+      case ALT_PROM_R_WRITE_ERR: { // ALT_PROM_READ write error
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = BEEP_DOT;
+        statusBlinkDelay[1] = BEEP_DASH;
+        statusBlinkDelay[2] = BEEP_DASH;
+        break;
+      }
+      case ALT_PROM_R_READ_ERR: { // ALT_PROM_READ read error
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = BEEP_DASH;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DOT;
+        break;
+      }
+      case ALT_RESET_ERR: { // ALT_RESET error
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = BEEP_DASH;
+        statusBlinkDelay[1] = BEEP_DOT;
+        statusBlinkDelay[2] = BEEP_DASH;
+        break;
+      }
+    } //switch(code)
   }
-  
-  if(delayIteration == 3 && blinkWait == true && LEDStatus == true && timeDelay == 4) {
-    delayIteration = 0; // start over at first blink of error code
+
+  //
+  // Configure LED
+  //
+  statusLEDOn = !statusLEDOn;
+  if (statusLEDOn) {
+    LEDOff(WHITE_LED); // Turn all LEDS off
+    return;
   }
-  
-  if(blinkWait == true && timeDelay == 0) {
-    LEDOff(WHITE_LED); // clear all colors of LED
-    waitTwo = true; //delay after code
+
+  if (statusBeepIndex < 3) {
+    LEDOn(statusColor);
+    statusDelayIndex++;
+    if (statusBlinkDelay[statusBeepIndex]) {
+        statusDelayIndex = 0;
+        statusBeepIndex++;
+    }
+  } else if (statusBeepIndex < 3+BEEP_DELIMTER_MULTIPLIER) {
+    statusBeepIndex++;
+  } else {
+    statusBeepIndex = 0;
+    statusBusy = false;
+    statusCode = RUNNING;
   }
-  
-  //reset all values to default
-  if(waitTwo == true && timeDelay == 4) {
-    waitTwo = false;
-    blinkWait = false;
-    blink[0] = false;
-    blink[1] = false;
-    blink[2] = false;
-  }
-  
-  if(LEDEndOff == true && timeDelay == 0 && blinkWait == false) {
-    LEDEndOff = false; // reset to default value
-    LEDOff(WHITE_LED); // clears all colors of the LED
-  }
-  
-  
-  #endif //BEEP_CODES_ENABLED
-  
-  ROM_IntMasterEnable();
-  
+
+  MAP_IntMasterEnable();
 } //Timer0IntHandler()
 
 //*****************************************************************************
@@ -618,28 +571,28 @@ altInit(void) {
   MAP_I2CMasterEnable(I2C0_BASE);
 
   // Reset altimeter
-  while (!altReset())
-    errorCode = ALT_RESET_ERR;
+  while (!altReset(ALT_BASE, ALT_ADDRESS)) {}
 }
 
 void
-timerInterruptsEnable(void) {
+statusCodeInterruptEnable(void) {
+#ifdef BEEP_CODES_ENABLED
   //
   // Enable the perifpherals used by the timer interrupts
   //
   ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-  
+
   //
   // Enable processor interrupts.
   //
-  ROM_IntMasterEnable();
-  
+  MAP_IntMasterEnable();
+
   //
   // Configure the 32-bit periodic timer for 4Hz.
   //
   ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
   ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, ROM_SysCtlClockGet() / 4);
-  
+
   //
   // Setup the interrupts for the timer timeouts.
   //
@@ -650,6 +603,7 @@ timerInterruptsEnable(void) {
   // Enable the timer.
   //
   ROM_TimerEnable(TIMER0_BASE, TIMER_A);
+#endif
 }
 
 //*****************************************************************************
@@ -667,7 +621,7 @@ LEDOff(uint8_t ui8Color) {
 }
 bool
 gpsReceive(uint8_t* ui8Buffer) {
-  ROM_IntMasterDisable();
+  MAP_IntMasterDisable();
   uint32_t ui32bIndex = 0;
   uint8_t command[5] = {'G','P','G','G','A'}, newChar, i;
   bool match = true; // If a match was found. Assume match is true until proven otherwise
@@ -703,30 +657,29 @@ gpsReceive(uint8_t* ui8Buffer) {
 
         // Add null terminator to end of GPS data
         ui8Buffer[ui32bIndex] = '\0'; ui32bIndex++;
-        ROM_IntMasterEnable();
+        MAP_IntMasterEnable();
         return true;
       }
     } //If char == $
   }
-  ROM_IntMasterEnable();
+  MAP_IntMasterEnable();
   return false;
 }
 void
 accelReceive(uint32_t* ui32ptrData) {
-  ROM_IntMasterDisable();
+  MAP_IntMasterDisable();
   MAP_ADCProcessorTrigger(ADC0_BASE, 3);
   while(!MAP_ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
   MAP_ADCIntClear(ADC0_BASE, 3);
   MAP_ADCSequenceDataGet(ADC0_BASE, 3, ui32ptrData);
-  ROM_IntMasterEnable();
+  MAP_IntMasterEnable();
 }
 bool
-altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
-  ROM_IntMasterDisable();
+altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   uint32_t ret[3];
 
-  if (!I2CWrite(ALT_ADC_CONV+ui8Cmd)) {
-    errorCode = ALT_ADC_CONV_ERR;
+  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_CONV+ui8Cmd)) {
+    setStatus(ALT_ADC_CONV_ERR);
     UARTprintf("ALT_ADC_CONV write error\n\r");
     return false;
   }
@@ -741,8 +694,8 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   //
   // Tell altimeter to send data to launchpad
   //
-  if (!I2CWrite(ALT_ADC_READ)) {
-    errorCode = ALT_ADC_R_WRITE_ERR;
+  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_READ)) {
+    setStatus(ALT_ADC_R_WRITE_ERR);
     UARTprintf("ALT_ADC_READ write error\n\r");
     return false;
   }
@@ -750,19 +703,17 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   //
   // Start receiving data from altimeter
   //
-  if (!I2CBurstRead(&ret[0], 3)) {
-    errorCode = ALT_ADC_R_READ_ERR;
+  if (!I2CBurstRead(ALT_BASE, ALT_ADDRESS, &ret[0], 3)) {
+    setStatus(ALT_ADC_R_READ_ERR);
     UARTprintf("ALT_ADC_READ read error\n\r");
     return false;
   }
 
   *ui32ptrData = (65536*ret[0]) + (256 * ret[1]) + ret[2];
-  ROM_IntMasterEnable();
   return true;
 }
 uint8_t
 altCRC4(uint16_t ui16nProm[8]) {
-  ROM_IntMasterDisable();
   int32_t cnt; // simple counter
   uint16_t n_rem = 0x00; // crc reminder
   uint16_t crc_read = ui16nProm[7]; // original value of the crc
@@ -790,47 +741,39 @@ altCRC4(uint16_t ui16nProm[8]) {
   }
   n_rem= (0x000F & (n_rem >> 12)); // final 4-bit reminder is CRC code
   ui16nProm[7]=crc_read; // restore the crc_read to its original place
-  ROM_IntMasterEnable();
   return (n_rem ^ 0x0);
 }
 bool
-altProm(uint16_t ui16nProm[8]) {
-  ROM_IntMasterDisable();
+altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
   uint32_t i;
   uint32_t ret[2];
   for (i = 0; i < 8; i++) {
-    if (!I2CWrite(ALT_PROM_READ+(i*2))) {
-      errorCode = ALT_PROM_R_WRITE_ERR;
+    if (!I2CWrite(ui32Base, ui8AltAddr, ALT_PROM_READ+(i*2))) {
+      setStatus(ALT_PROM_R_WRITE_ERR);
       UARTprintf("ALT_PROM_READ write error\n\r");
-      ROM_IntMasterEnable();
       return false;
     }
-    if (!I2CBurstRead(&ret[0], 2)) {
-      errorCode = ALT_PROM_R_READ_ERR;
+    if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 2)) {
+      while (!setStatus(ALT_PROM_R_READ_ERR)) {};
       UARTprintf("ALT_PROM_READ read error\n\r");
-      ROM_IntMasterEnable();
       return false;
     }
     ui16nProm[i] = ((256 * ret[0]) + ret[1]);
   }
-  ROM_IntMasterEnable();
   return true;
 }
 bool
-altReset(void) {
-  ROM_IntMasterDisable();
-  if (!I2CWrite(ALT_RESET)) {
-    errorCode = ALT_RESET_ERR;
+altReset(uint32_t ui32Base, uint8_t ui8AltAddr) {
+  if (!I2CWrite(ui32Base, ui8AltAddr, ALT_RESET)) {
+    while (!setStatus(ALT_RESET_ERR)) {};
     UARTprintf("ALT_RESET write error\n\r");
-    ROM_IntMasterEnable();
     return false;
   }
-  //errorCode = ALT_RESET_DELAY;
-  ROM_IntMasterEnable();
+  delay(ALT_RESET_DELAY);
   return true;
 }
 bool
-altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
+altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
 {
   // Digital pressure and temp
   uint32_t D1 = 0;   // ADC value of the pressure conversion
@@ -843,10 +786,8 @@ altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPr
   int64_t  OFF2  = 0; // second order offset at actual temperature
   int64_t  SENS  = 0; // sensitivity at actual temperature
   int64_t  SENS2 = 0; // second order sensitivity at actual temperature
-  
-  ROM_IntMasterDisable();
 
-  if (altADCConversion(ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ALT_ADC_D2+ui8OSR, &D2)) {
+  if (altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D2+ui8OSR, &D2)) {
     // Calculate 1st order pressure and temperature
 
     // Calculate 1st order temp difference, offset, and sensitivity (MS5607 1st order algorithm)
@@ -877,90 +818,105 @@ altReceive(uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPr
 
     // Calculate altitude (in feet)
     *fAltitude = (1-pow((*fPressure/1013.25),.190284))*145366.45;
-    ROM_IntMasterEnable();
     return true;
   }
-  ROM_IntMasterEnable();
   return false;
 }
 bool
-I2CRead(uint32_t* ui32ptrData) {
-  ROM_IntMasterDisable();
+I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
   //
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_READ);
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
+
+  //
+  // Disable Interrupts to prevent I2C comm failure
+  //
+  MAP_IntMasterDisable();
 
   //
   // Tell the master to read data.
   //
-  MAP_I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_RECEIVE);
 
   //
   // Wait until master module is done receiving.
   //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {};
+
+  //
+  // Reenable Interrupts
+  //
+  MAP_IntMasterEnable();
 
   //
   // Check for errors.
   //
-  if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return false;
+  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
 
   //
   // Get data
   //
-  *ui32ptrData = MAP_I2CMasterDataGet(I2C0_BASE);
+  *ui32ptrData = MAP_I2CMasterDataGet(ui32Base);
 
   //
   // return the data from the master.
   //
-  ROM_IntMasterEnable();
   return true;
 }
 bool
-I2CWrite(uint8_t ui8SendData) {
-  ROM_IntMasterDisable();
+I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
+  MAP_IntMasterDisable();
   //
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_WRITE);
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
 
   //
   // Place the command to be sent in the data register.
   //
-  MAP_I2CMasterDataPut(I2C0_BASE, ui8SendData);
+  MAP_I2CMasterDataPut(ui32Base, ui8SendData);
+
+  //
+  // Disable Interrupts to prevent I2C comm failure
+  //
+  MAP_IntMasterDisable();
 
   //
   // Initiate send of data from the master.
   //
-  MAP_I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_SEND);
 
   //
   // Wait until master module is done transferring.
   //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {};
+
+  //
+  // Reenable Interrupts
+  //
+  MAP_IntMasterEnable();
 
   //
   // Check for errors.
   //
-  if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return false;
+  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
 
   //
   // Return 1 if there is no error.
   //
-  ROM_IntMasterEnable();
   return true;
 }
 bool
-I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size) {
-  ROM_IntMasterDisable();
+I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size) {
+  MAP_IntMasterDisable();
   //
   // Use I2C single read if theres only 1 item to receive
   //
   if (ui32Size == 1)
-    return I2CRead(&ui32ptrReadData[0]);
+    return I2CRead(ui32Base, ui8SlaveAddr, &ui32ptrReadData[0]);
 
   uint32_t ui32ByteCount;        // local variable used for byte counting/state determination
   uint32_t MasterOptionCommand; // used to assign the control commands
@@ -969,7 +925,7 @@ I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size) {
   // Tell the master module what address it will place on the bus when
   // reading from the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_READ);
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
 
   //
   // Start with BURST with more than one byte to read
@@ -991,42 +947,50 @@ I2CBurstRead(uint32_t* ui32ptrReadData, uint32_t ui32Size) {
       MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_FINISH;
 
     //
+    // Disable Interrupts to prevent I2C comm failure
+    //
+    MAP_IntMasterDisable();
+
+    //
     // Initiate read of data from the slave.
     //
-    MAP_I2CMasterControl(I2C0_BASE, MasterOptionCommand);
+    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
 
     //
     // Wait until master module is done reading.
     //
-    while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+    while(MAP_I2CMasterBusy(ui32Base)) {};
+
+    //
+    // Reenable Interrupts
+    //
+    MAP_IntMasterEnable();
 
     //
     // Check for errors.
     //
-    if (MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE) return false;
+    if (MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
 
     //
     // Move byte from register
     //
-    ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(I2C0_BASE);
+    ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(ui32Base);
   }
 
 
   //
   // Return 1 if there is no error.
   //
-  ROM_IntMasterEnable();
   return true;
 }
 bool
-I2CBurstWrite(uint8_t ui8SendData[], uint32_t ui32Size) {
-  ROM_IntMasterDisable();
+I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size) {
   //
   // Use I2C single write if theres only 1 item to send
   //
   if (ui32Size == 1) {
-    ROM_IntMasterEnable();
-    return I2CWrite(ui8SendData[0]);
+    MAP_IntMasterEnable();
+    return I2CWrite(ui32Base, ui8SlaveAddr, ui8SendData[0]);
   }
 
   uint32_t uiByteCount;         // local variable used for byte counting/state determination
@@ -1036,12 +1000,12 @@ I2CBurstWrite(uint8_t ui8SendData[], uint32_t ui32Size) {
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
-  MAP_I2CMasterSlaveAddrSet(I2C0_BASE, ALT_ADDRESS, I2C_MODE_WRITE);
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
 
   //
   // Wait until master module is done transferring.
   //
-  while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {};
 
   //
   // The first byte has to be sent with the START control word
@@ -1065,30 +1029,39 @@ I2CBurstWrite(uint8_t ui8SendData[], uint32_t ui32Size) {
     //
     // Send data byte
     //
-    MAP_I2CMasterDataPut(I2C0_BASE, ui8SendData[uiByteCount]);
+    MAP_I2CMasterDataPut(ui32Base, ui8SendData[uiByteCount]);
 
+    //
+    // Disable Interrupts to prevent I2C comm failure
+    //
+    MAP_IntMasterDisable();
+
+    //
     //
     // Initiate send of data from the master.
     //
-    MAP_I2CMasterControl(I2C0_BASE, MasterOptionCommand);
+    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
 
+    //
     //
     // Wait until master module is done transferring.
     //
-    while(MAP_I2CMasterBusy(I2C0_BASE)) {};
+    while(MAP_I2CMasterBusy(ui32Base)) {};
+
+    //
+    // Reenable Interrupts
+    //
+    MAP_IntMasterEnable();
 
     //
     // Check for errors.
     //
-    if(MAP_I2CMasterErr(I2C0_BASE) != I2C_MASTER_ERR_NONE){ 
-      ROM_IntMasterEnable();
-      return false;
-    }
+    if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
   }
 
   //
   // Return 1 if there is no error.
   //
-  ROM_IntMasterEnable();
   return true;
 }
+

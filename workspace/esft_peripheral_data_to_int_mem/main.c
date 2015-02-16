@@ -40,6 +40,7 @@
 
 #include "altimeter.h"
 #include "flashstore.h"
+#include "gyro.h"
 #include "uartstdio.h"
 
 //*****************************************************************************
@@ -48,15 +49,20 @@
 //
 //*****************************************************************************
 
-// Altimeter
-#define ALT_BASE    I2C0_BASE
-#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
-
 // I2C
 #define I2C_MODE_WRITE false
 #define I2C_MODE_READ true
 #define I2C_SPEED_100 false
 #define I2C_SPEED_400 true
+
+// Altimeter
+#define ALT_BASE    I2C0_BASE
+#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
+#define ALT_SPEED   I2C_SPEED_400
+
+// Gyro
+#define GYRO_BASE  I2C1_BASE
+#define GYRO_SPEED I2C_SPEED_400
 
 // LED Colors
 #define RED_LED GPIO_PIN_1
@@ -77,18 +83,18 @@
 // Determines if beep codes are enabled. Comment out to disable functionality
 #define BEEP_CODES_ENABLED
 
-typedef enum STATUSCODE {
-  INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
-  ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
-  ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
-  } StatusCode_t;
-
 // multiplier of "dot" and "dash" blinks in terms of interrupt lengths
 #define BEEP_DOT 1
 #define BEEP_DASH 3
 
 // Multiplier of the interrupt clock to delimit status codes (E.G. 3 = 750ms @ 4mhz)
 #define BEEP_DELIMTER_MULTIPLIER 3
+
+typedef enum STATUSCODE {
+    INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
+    ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
+    ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
+  } StatusCode_t;
 
 static StatusCode_t statusCode = INITIALIZING;
 static uint8_t    statusColor;
@@ -112,6 +118,7 @@ void consoleInit(void);
 void gpsInit(void);
 void accelInit(void);
 void altInit(void);
+void gyroInit(void);
 void statusCodeInterruptEnable(void);
 void delay(uint32_t);
 bool gpsReceive(uint8_t* ui8Buffer);
@@ -121,6 +128,7 @@ bool altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uin
 uint8_t altCRC4(uint16_t ui16nProm[8]);
 bool altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
 bool altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+void I2CInit(uint32_t ui32Base, bool bSpeed);
 bool I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptr32Data);
 bool I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8Data);
 bool I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size);
@@ -134,7 +142,6 @@ bool I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[
 //*****************************************************************************
 void
 __error__(char *pcFilename, uint32_t ui32Line) {
-
   while(true) {
     UARTprintf("Error at line %d of %s\n\r", ui32Line, pcFilename);
     setStatus(DRL_ERR);
@@ -158,7 +165,7 @@ main(void) {
   uint32_t flashHeader = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
   uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
   uint32_t flashRecordSize; // Size of the current flash record
-  uint8_t  flashWriteBuffer[512]; // Buffer of the data to write
+  uint8_t  flashWriteBuffer[256]; // Buffer of the data to write
   int32_t  flashWriteBufferSize;  // Length of the record to write
 
   //
@@ -226,6 +233,11 @@ main(void) {
   // Enable the altimeter
   //
   altInit();
+
+  //
+  // Enable the gyro
+  //
+  gyroInit();
 
   //
   // Enable flash storage
@@ -552,37 +564,20 @@ accelInit(void) {
 void
 altInit(void) {
   //
-  // Enable the peripherals used by the accelerometer
+  // Enable the I2C module used by the altimeter
   //
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-
-  //
-  // Configure GPIO PB2 as I2C0 SCL
-  //
-  MAP_GPIOPinConfigure(GPIO_PB2_I2C0SCL);
-  MAP_GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
-
-  //
-  // Configure GPIO PB3 as I2C0 SDA
-  //
-  MAP_GPIOPinConfigure(GPIO_PB3_I2C0SDA);
-  MAP_GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
-
-  //
-  // Configure I2C0.
-  //
-  MAP_I2CMasterInitExpClk(I2C0_BASE, MAP_SysCtlClockGet(), I2C_SPEED_100);
-
-  //
-  // Enable I2C0 Master Block
-  //
-  MAP_I2CMasterEnable(I2C0_BASE);
+  I2CInit(ALT_BASE, ALT_SPEED);
 
   // Reset altimeter
   while (!altReset(ALT_BASE, ALT_ADDRESS)) {}
 }
-
+void
+gyroInit(void) {
+  //
+  // Enable the I2C module used by the gyro
+  //
+  I2CInit(GYRO_BASE, GYRO_SPEED);
+}
 void
 statusCodeInterruptEnable(void) {
 #ifdef BEEP_CODES_ENABLED
@@ -830,6 +825,96 @@ altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16C
     return true;
   }
   return false;
+}
+void
+I2CInit(uint32_t ui32Base, bool bSpeed) {
+  switch(ui32Base) {
+    case I2C0_BASE: {
+      //
+      // Enable Peripherals used by I2C0
+      //
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
+      //
+      // Enable pin PB2 for I2C0 I2C0SCL
+      //
+      MAP_GPIOPinConfigure(GPIO_PB2_I2C0SCL);
+      MAP_GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
+
+      //
+      // Enable pin PB3 for I2C0 I2C0SDA
+      //
+      MAP_GPIOPinConfigure(GPIO_PB3_I2C0SDA);
+      MAP_GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
+
+      break;
+    }
+    case I2C1_BASE: {
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C1);
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+      //
+      // Enable pin PA6 for I2C1 I2C1SCL
+      //
+      MAP_GPIOPinConfigure(GPIO_PA6_I2C1SCL);
+      MAP_GPIOPinTypeI2CSCL(GPIO_PORTA_BASE, GPIO_PIN_6);
+
+      //
+      // Enable pin PA7 for I2C1 I2C1SDA
+      //
+      MAP_GPIOPinConfigure(GPIO_PA7_I2C1SDA);
+      MAP_GPIOPinTypeI2C(GPIO_PORTA_BASE, GPIO_PIN_7);
+
+      break;
+    }
+    case I2C2_BASE: {
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+
+      //
+      // Enable pin PE4 for I2C2 I2C2SCL
+      //
+      MAP_GPIOPinConfigure(GPIO_PE4_I2C2SCL);
+      MAP_GPIOPinTypeI2CSCL(GPIO_PORTE_BASE, GPIO_PIN_4);
+
+      //
+      // Enable pin PE5 for I2C2 I2C2SDA
+      //
+      MAP_GPIOPinConfigure(GPIO_PE5_I2C2SDA);
+      MAP_GPIOPinTypeI2C(GPIO_PORTE_BASE, GPIO_PIN_5);
+
+      break;
+    }
+    case I2C3_BASE: {
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C3);
+      MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+
+      //
+      // Enable pin PD1 for I2C3 I2C3SDA
+      //
+      MAP_GPIOPinConfigure(GPIO_PD1_I2C3SDA);
+      MAP_GPIOPinTypeI2C(GPIO_PORTD_BASE, GPIO_PIN_1);
+
+      //
+      // Enable pin PD0 for I2C3 I2C3SCL
+      //
+      MAP_GPIOPinConfigure(GPIO_PD0_I2C3SCL);
+      MAP_GPIOPinTypeI2CSCL(GPIO_PORTD_BASE, GPIO_PIN_0);
+
+      break;
+    }
+  }
+
+  //
+  // Enable the supplied I2C Base Clock
+  //
+  MAP_I2CMasterInitExpClk(ui32Base, MAP_SysCtlClockGet(), bSpeed);
+
+  //
+  // Enable supplied I2C Base Master Block
+  //
+  MAP_I2CMasterEnable(ui32Base);
 }
 bool
 I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {

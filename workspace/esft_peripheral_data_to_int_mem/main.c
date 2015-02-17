@@ -130,13 +130,14 @@ bool altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uin
 uint8_t altCRC4(uint16_t ui16nProm[8]);
 bool altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
 bool altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+void gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr);
 bool gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr);
 void I2CInit(uint32_t ui32Base, bool bSpeed);
 bool I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptr32Data);
 bool I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8Data);
 bool I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size);
 bool I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size);
-void SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth)
+void SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth);
 
 #ifdef DEBUG
 //*****************************************************************************
@@ -438,7 +439,7 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
         statusColor = YELLOW_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
-        statusBlinkDelay[2] = BEEP_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
     } //switch(code)
@@ -585,7 +586,7 @@ gyroInit(void) {
   //
   I2CInit(GYRO_BASE, GYRO_SPEED);
 
-  gyroStartup(GYRO_BASE, GYRO_ADDRESS));
+  gyroStartup(GYRO_BASE, GYRO_ADDRESS);
 }
 void
 statusCodeInterruptEnable(void) {
@@ -837,16 +838,18 @@ altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16C
 }
 void
 gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr) {
+	/*
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG2);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG3);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG4);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG6);
+  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG5);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_REFERENCE);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_THS);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_DUR);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_CFG);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG5);
   I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG1);
+  */
 }
 bool
 gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr) {
@@ -1188,6 +1191,8 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
 void
 SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode,
         uint32_t ui32BitRate, uint32_t ui32DataWidth) {
+	// TODO: GET GPIO_LOCK DEFINES
+	/*
   switch (ui32Base) {
     case SSI0_BASE: {
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
@@ -1320,4 +1325,5 @@ SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode,
   // Enable supplied SSI Base Master Block
   //
   MAP_SSIEnable(ui32Base);
+  */
 }

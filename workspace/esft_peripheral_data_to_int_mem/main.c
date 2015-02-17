@@ -51,10 +51,10 @@
 //*****************************************************************************
 
 // Accelerometer
-// #define ACCEL_ENABLED
+#define ACCEL_ENABLED
 
 // Altimeter
-// #define ALT_ENABLED
+#define ALT_ENABLED
 #define ALT_BASE    I2C0_BASE
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 #define ALT_SPEED   I2C_SPEED_400
@@ -107,7 +107,7 @@
 
 // Status Codes
 typedef enum STATUSCODE {
-    INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
+    NONE, INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
     ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
     ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
   } StatusCode_t;
@@ -192,7 +192,7 @@ main(void) {
   uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
   uint32_t flashRecordSize; // Size of the current flash record
   uint8_t  flashWriteBuffer[256]; // Buffer of the data to write
-  int32_t  flashWriteBufferSize;  // Length of the record to write
+  int32_t  flashWriteBufferSize = 0;  // Length of the record to write
 
 #ifdef GPS_ENABLED
   //
@@ -293,11 +293,8 @@ main(void) {
 #ifdef ALT_ENABLED
   while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {}; // read coefficients
   altCRC = altCRC4(altCalibration); // calculate the CRC.
-
-  if (!(altCRC == (altCalibration[7] & 0x000F))) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
-    while (true) {
-      setStatus(ALT_CRC_ERR);
-    }
+  while (altCRC != (altCalibration[7] & 0x000F)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
+    setStatus(ALT_CRC_ERR);
   }
 #endif
 
@@ -330,22 +327,24 @@ main(void) {
     }
 #endif
 
-    flashWriteBuffer[flashWriteBufferSize-1] = '\n'; // Overwrite last comma with a \n
-    flashWriteBuffer[flashWriteBufferSize] = '\r'; // Add a \r
-    flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Terminate string with a null
+    if (flashWriteBufferSize > 0) { // Is there anything to write?
+      flashWriteBuffer[flashWriteBufferSize-1] = '\n'; // Overwrite last comma with a \n
+      flashWriteBuffer[flashWriteBufferSize] = '\r';   // Add a \r
+      flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Terminate string with a null
+
+      //
+      // Write data to flash
+      //
+      FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
 
 #ifdef DEBUG_FLASH
-    //
-    // Send write buffer over UART for debugging
-    //
-    UARTprintf("%s", flashWriteBuffer);
-    delay(DEBUG_FLASH_DELAY);
+      //
+      // Send write buffer over UART for debugging
+      //
+      UARTprintf("%s", flashWriteBuffer);
+      delay(DEBUG_FLASH_DELAY);
 #endif
-
-    //
-    // Write data to flash
-    //
-    FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
+    }
   } // main while end
 
   //
@@ -403,11 +402,12 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
   //
   ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
-  //
-  // If a status code has already been initiated, do not overwrite
-  //
-  if (!statusBusy) {
-    statusBusy = true;
+  if (!statusBusy) { // If a status code has already been initiated, do not overwrite
+    statusBusy = true; // Set the busy state for status codes
+
+    if (statusCode == NONE) // If the status code isn't set, default to RUNNING
+      statusCode = RUNNING;
+
     //
     // set color and delay
     //
@@ -498,22 +498,21 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
   statusLEDOn = !statusLEDOn;
   if (statusLEDOn) {
     LEDOff(WHITE_LED); // Turn all LEDS off
-    return;
-  }
-
-  if (statusBeepIndex < 3) {
-    LEDOn(statusColor);
-    statusDelayIndex++;
-    if (statusBlinkDelay[statusBeepIndex]) {
-        statusDelayIndex = 0;
-        statusBeepIndex++;
-    }
-  } else if (statusBeepIndex < 3+STATUS_DELIMTER_MULTIPLIER) {
-    statusBeepIndex++;
   } else {
-    statusBeepIndex = 0;
-    statusBusy = false;
-    statusCode = RUNNING;
+    if (statusBeepIndex < 3) {
+      LEDOn(statusColor);
+      statusDelayIndex++;
+      if (statusBlinkDelay[statusBeepIndex]) {
+          statusDelayIndex = 0;
+          statusBeepIndex++;
+      }
+    } else if (statusBeepIndex < 3+STATUS_DELIMTER_MULTIPLIER) {
+      statusBeepIndex++;
+    } else {
+      statusBeepIndex = 0;
+      statusBusy = false;
+      statusCode = NONE;
+    }
   }
 
   MAP_IntMasterEnable();
@@ -915,12 +914,10 @@ LEDOff(uint8_t ui8Color) {
   // Receive Functions
 void
 accelReceive(uint32_t* ui32ptrData) {
-  MAP_IntMasterDisable();
   MAP_ADCProcessorTrigger(ADC0_BASE, 3);
   while(!MAP_ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
   MAP_ADCIntClear(ADC0_BASE, 3);
   MAP_ADCSequenceDataGet(ADC0_BASE, 3, ui32ptrData);
-  MAP_IntMasterEnable();
 }
 bool
 altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
@@ -975,7 +972,6 @@ altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16C
 }
 bool
 gpsReceive(uint8_t* ui8Buffer) {
-  MAP_IntMasterDisable();
   uint32_t ui32bIndex = 0;
   uint8_t command[5] = {'G','P','G','G','A'}, newChar, i;
   bool match = true; // If a match was found. Assume match is true until proven otherwise
@@ -1010,12 +1006,10 @@ gpsReceive(uint8_t* ui8Buffer) {
 
         // Add null terminator to end of GPS data
         ui8Buffer[ui32bIndex] = '\0';
-        MAP_IntMasterEnable();
         return true;
       }
     } //If char == $
   }
-  MAP_IntMasterEnable();
   return false;
 }
 bool

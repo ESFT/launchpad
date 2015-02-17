@@ -1,15 +1,5 @@
 //*****************************************************************************
 //
-// main.c
-//
-//
-//
-//
-//*****************************************************************************
-
-
-//*****************************************************************************
-//
 // Includes
 //
 //*****************************************************************************
@@ -61,7 +51,7 @@
 
 // Flash
 // Determines if flash debug output is enabled. Comment out to disable functionality
-// #define DEBUG_FLASH
+#define DEBUG_FLASH
 #define DEBUG_FLASH_DELAY 500
 
 // GPS
@@ -95,19 +85,20 @@
 //
 //*****************************************************************************
 
-// Determines if beep codes are enabled. Comment out to disable functionality
+// Determines if status codes are enabled. Comment out to disable functionality
 #define STATUS_CODES_ENABLED
 
-// multiplier of "dot" and "dash" blinks in terms of interrupt count (E.G. 1 = 250ms @ 4mhz)
+// Defines the length of time between interrupts in milliseconds
+#define STATUS_CODE_LENGTH 250
+
+// length of "dot" and "dash" blinks as well as the delimiter length in terms of interrupt count
 #define STATUS_DOT  1
 #define STATUS_DASH 3
-
-// Multiplier of the interrupt clock to delimit status codes (E.G. 3 = 750ms @ 4mhz)
-#define STATUS_DELIMTER_MULTIPLIER 3
+#define STATUS_DELIMTER 3
 
 // Status Codes
 typedef enum STATUSCODE {
-    NONE, INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
+    INITIALIZING, RUNNING, DRL_ERR, ALT_CRC_ERR, OUT_OF_FLASH,
     ALT_RESET_ERR, ALT_PROM_R_WRITE_ERR, ALT_PROM_R_READ_ERR,
     ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
   } StatusCode_t;
@@ -117,7 +108,7 @@ static uint8_t      statusColor;               // Status Code Color
 static uint32_t     statusBlinkDelay[3];       // Status Code Delays
 static uint8_t      statusBeepIndex = 0;       // Index of beep LED
 static uint32_t     statusDelayIndex = 0;      // Index of beep length
-static bool         statusBusy = false;        // Beep code system is busy
+static bool         statusBusy = false;        // Status code system is busy
 static bool         statusLEDOn = false;       // Status of the LED
 
 //*****************************************************************************
@@ -171,6 +162,7 @@ __error__(char *pcFilename, uint32_t ui32Line) {
   while(true) {
     UARTprintf("Error at line %d of %s\n\r", ui32Line, pcFilename);
     setStatus(DRL_ERR);
+    delay(1000);
   };
 }
 #endif
@@ -226,10 +218,10 @@ main(void) {
   //
 
   //
-  // Set the clocking to run directly from the 16MHz crystal.
+  // Set the clocking to run at 50MHz.
   //
-  MAP_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
-                     SYSCTL_XTAL_16MHZ);
+
+  MAP_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
   //
   // Enable the LEDs
@@ -291,7 +283,7 @@ main(void) {
   //
 
 #ifdef ALT_ENABLED
-  while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {}; // read coefficients
+  while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {} // read coefficients
   altCRC = altCRC4(altCalibration); // calculate the CRC.
   while (altCRC != (altCalibration[7] & 0x000F)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
     setStatus(ALT_CRC_ERR);
@@ -350,7 +342,6 @@ main(void) {
   //
   // Out of flash memory. Output flash memory to console
   //
-
   UARTprintf("Accelerometer,Temperature,Pressure,Altitude,Identifier,Time,Latitude,Longitude,Fix Quality,Num of Sats,HDOP,GPS Altitude,Height of geoid above WGS84 ellipsoid, Time since DGPS,DGPS reference,Checksum\n\r");
   while (true) {
     setStatus(OUT_OF_FLASH);
@@ -380,7 +371,9 @@ main(void) {
 //*****************************************************************************
 void
 delay(uint32_t ui32ms) { // Delay in milliseconds
-  MAP_SysCtlDelay((MAP_SysCtlClockGet()/(3*1000))*ui32ms);
+  MAP_IntMasterDisable();
+  MAP_SysCtlDelay(MAP_SysCtlClockGet() / (3000 / ui32ms));
+  MAP_IntMasterEnable();
 }
 bool
 setStatus(StatusCode_t scStatus) { // Set status code
@@ -391,7 +384,7 @@ setStatus(StatusCode_t scStatus) { // Set status code
   return false;
 }
 void
-Timer0IntHandler(void) { // timer interrupt to handle beep codes
+Timer0IntHandler(void) { // Timer interrupt to handle status codes
   //
   // Disable interrupts to prevent loops
   //
@@ -404,9 +397,6 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
 
   if (!statusBusy) { // If a status code has already been initiated, do not overwrite
     statusBusy = true; // Set the busy state for status codes
-
-    if (statusCode == NONE) // If the status code isn't set, default to RUNNING
-      statusCode = RUNNING;
 
     //
     // set color and delay
@@ -506,12 +496,12 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
           statusDelayIndex = 0;
           statusBeepIndex++;
       }
-    } else if (statusBeepIndex < 3+STATUS_DELIMTER_MULTIPLIER) {
+    } else if (statusBeepIndex < 3+STATUS_DELIMTER) {
       statusBeepIndex++;
     } else {
       statusBeepIndex = 0;
       statusBusy = false;
-      statusCode = NONE;
+      statusCode = RUNNING;
     }
   }
 
@@ -539,14 +529,15 @@ accelInit(void) {
   //
   // Configure ADC0 on sequence 3
   //
-  MAP_ADCSequenceDisable(ADC0_BASE, 3);
-  MAP_ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
-  MAP_ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
-  MAP_ADCSequenceEnable(ADC0_BASE, 3);
+  MAP_ADCSequenceDisable(ADC0_BASE, 0);
+  MAP_ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+  MAP_ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
+  MAP_ADCHardwareOversampleConfigure(ADC0_BASE, 64);
+  MAP_ADCSequenceEnable(ADC0_BASE, 0);
 
   // Enable ADC interupts
-  MAP_ADCIntEnable(ADC0_BASE, 3);
-  MAP_ADCIntClear(ADC0_BASE, 3);
+  MAP_ADCIntEnable(ADC0_BASE, 0);
+  MAP_ADCIntClear(ADC0_BASE, 0);
 }
 void
 altInit(void) {
@@ -881,10 +872,10 @@ statusCodeInterruptInit(void) {
   MAP_IntMasterEnable();
 
   //
-  // Configure the 32-bit periodic timer for 4Hz.
+  // Configure the 32-bit periodic timer for the status code length define.
   //
   MAP_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-  MAP_TimerLoadSet(TIMER0_BASE, TIMER_A, MAP_SysCtlClockGet() / 4);
+  MAP_TimerLoadSet(TIMER0_BASE, TIMER_A, MAP_SysCtlClockGet() / (1000 / STATUS_CODE_LENGTH));
 
   //
   // Setup the interrupts for the timer timeouts.
@@ -914,10 +905,10 @@ LEDOff(uint8_t ui8Color) {
   // Receive Functions
 void
 accelReceive(uint32_t* ui32ptrData) {
-  MAP_ADCProcessorTrigger(ADC0_BASE, 3);
-  while(!MAP_ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
-  MAP_ADCIntClear(ADC0_BASE, 3);
-  MAP_ADCSequenceDataGet(ADC0_BASE, 3, ui32ptrData);
+  MAP_ADCProcessorTrigger(ADC0_BASE, 0);
+  while(!MAP_ADCIntStatus(ADC0_BASE, 0, false)) {} // wait for a2d conversion
+  MAP_ADCIntClear(ADC0_BASE, 0);
+  MAP_ADCSequenceDataGet(ADC0_BASE, 0, ui32ptrData);
 }
 bool
 altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
@@ -1098,7 +1089,7 @@ altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
       return false;
     }
     if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 2)) {
-      while (!setStatus(ALT_PROM_R_READ_ERR)) {};
+      while (!setStatus(ALT_PROM_R_READ_ERR)) {}
       UARTprintf("ALT_PROM_READ read error\n\r");
       return false;
     }
@@ -1109,7 +1100,7 @@ altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
 bool
 altReset(uint32_t ui32Base, uint8_t ui8AltAddr) {
   if (!I2CWrite(ui32Base, ui8AltAddr, ALT_RESET)) {
-    while (!setStatus(ALT_RESET_ERR)) {};
+    while (!setStatus(ALT_RESET_ERR)) {}
     UARTprintf("ALT_RESET write error\n\r");
     return false;
   }
@@ -1137,7 +1128,7 @@ I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
   //
   // Wait for the I2C Bus to finish
   //
-  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusBusy(ui32Base)) {}
 
   //
   // Tell the master module what address it will place on the bus when
@@ -1158,7 +1149,7 @@ I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
   //
   // Wait until master module is done receiving.
   //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {}
 
   //
   // Reenable Interrupts
@@ -1186,7 +1177,7 @@ I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
   //
   // Wait for the I2C Bus to finish
   //
-  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusBusy(ui32Base)) {}
 
   //
   // Tell the master module what address it will place on the bus when
@@ -1212,7 +1203,7 @@ I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
   //
   // Wait until master module is done transferring.
   //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {}
 
   //
   // Reenable Interrupts
@@ -1244,7 +1235,7 @@ I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData,
   //
   // Wait for the I2C Bus to finish
   //
-  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusBusy(ui32Base)) {}
 
   //
   // Tell the master module what address it will place on the bus when
@@ -1284,7 +1275,7 @@ I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData,
     //
     // Wait until master module is done reading.
     //
-    while(MAP_I2CMasterBusy(ui32Base)) {};
+    while(MAP_I2CMasterBusy(ui32Base)) {}
 
     //
     // Reenable Interrupts
@@ -1322,7 +1313,7 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
   //
   // Wait for the I2C Bus to finish
   //
-  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusBusy(ui32Base)) {}
 
   //
   // Tell the master module what address it will place on the bus when
@@ -1333,7 +1324,7 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
   //
   // Wait until master module is done transferring.
   //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
+  while(MAP_I2CMasterBusy(ui32Base)) {}
 
   //
   // The first byte has to be sent with the START control word
@@ -1374,7 +1365,7 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
     //
     // Wait until master module is done transferring.
     //
-    while(MAP_I2CMasterBusy(ui32Base)) {};
+    while(MAP_I2CMasterBusy(ui32Base)) {}
 
     //
     // Reenable Interrupts

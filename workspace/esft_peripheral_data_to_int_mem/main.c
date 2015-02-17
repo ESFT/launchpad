@@ -20,6 +20,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "inc/hw_gpio.h"
 #include "inc/hw_i2c.h"
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
@@ -45,25 +46,38 @@
 
 //*****************************************************************************
 //
-// Defines
+// Peripheral defines
 //
 //*****************************************************************************
+
+// Accelerometer
+// #define ACCEL_ENABLED
+
+// Altimeter
+// #define ALT_ENABLED
+#define ALT_BASE    I2C0_BASE
+#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
+#define ALT_SPEED   I2C_SPEED_400
+
+// Flash
+// Determines if flash debug output is enabled. Comment out to disable functionality
+// #define DEBUG_FLASH
+#define DEBUG_FLASH_DELAY 500
+
+// GPS
+// #define GPS_ENABLED
+
+// Gyro
+// #define GYRO_ENABLED
+#define GYRO_BASE    I2C1_BASE
+#define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
+#define GYRO_SPEED   I2C_SPEED_400
 
 // I2C
 #define I2C_MODE_WRITE false
 #define I2C_MODE_READ  true
 #define I2C_SPEED_100  false
 #define I2C_SPEED_400  true
-
-// Altimeter
-#define ALT_BASE    I2C0_BASE
-#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
-#define ALT_SPEED   I2C_SPEED_400
-
-// Gyro
-#define GYRO_BASE    I2C1_BASE
-#define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
-#define GYRO_SPEED   I2C_SPEED_400
 
 // LED Colors
 #define RED_LED     GPIO_PIN_1
@@ -111,33 +125,40 @@ static bool         statusLEDOn = false;       // Status of the LED
 // Prototypes
 //
 //*****************************************************************************
-void LEDOn(uint8_t ui8Color);
-void LEDOff(uint8_t ui8Color);
+  // Misc
+void delay(uint32_t ui32ms);
 bool setStatus(StatusCode_t scStatus);
-void FPUInit(void);
-void LEDInit(void);
-void consoleInit(void);
-void gpsInit(void);
+  // Initiations
 void accelInit(void);
 void altInit(void);
+void consoleInit(void);
+void FPUInit(void);
+void gpsInit(void);
 void gyroInit(void);
-void statusCodeInterruptEnable(void);
-void delay(uint32_t);
-bool gpsReceive(uint8_t* ui8Buffer);
+void I2CInit(uint32_t ui32Base, bool bSpeed);
+void LEDInit(void);
+void SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth);
+void statusCodeInterruptInit(void);
+  // Peripherals
+void LEDOn(uint8_t ui8Color);
+void LEDOff(uint8_t ui8Color);
+    // Receive Functions
 void accelReceive(uint32_t* ui32ptrData);
 bool altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude);
+bool gpsReceive(uint8_t* ui8Buffer);
+bool gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr);
+    // Altimeter Functions
 bool altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData);
 uint8_t altCRC4(uint16_t ui16nProm[8]);
 bool altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
 bool altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+    // Gyro Functions
 void gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr);
-bool gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr);
-void I2CInit(uint32_t ui32Base, bool bSpeed);
+    // I2C Functions
 bool I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptr32Data);
 bool I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8Data);
 bool I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size);
 bool I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size);
-void SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth);
 
 #ifdef DEBUG
 //*****************************************************************************
@@ -173,26 +194,32 @@ main(void) {
   uint8_t  flashWriteBuffer[256]; // Buffer of the data to write
   int32_t  flashWriteBufferSize;  // Length of the record to write
 
+#ifdef GPS_ENABLED
   //
   // GPS Variables
   //
-  bool     gpsDataReceived;  // GPS data has been received
+  bool     gpsDataReceived = false;  // GPS data has been received
   uint8_t  gpsSentence[128]; // GPS NMEA sentence
+#endif
 
+#ifdef ACCEL_ENABLED
   //
   // Accelerometer variables
   //
-  uint32_t accelData; // Accelerometer data
+  uint32_t accelData = 0; // Accelerometer data
+#endif
 
+#ifdef ALT_ENABLED
   //
   // Altimeter variables
   //
-  bool     altDataReceived;   // Altimeter data has been received
+  bool     altDataReceived = false;   // Altimeter data has been received
   uint16_t altCalibration[8]; // calibration coefficients
   uint8_t  altCRC;            // calculated CRC
   float    altTemperature;    // compensated temperature value
   float    altPressure;       // compensated pressure value
   float    altAltitude;       // Calculated altitude
+#endif
 
   //
   ///////////////////Initialize//////////////////////////////
@@ -205,14 +232,16 @@ main(void) {
                      SYSCTL_XTAL_16MHZ);
 
   //
-  // Enable the LED
+  // Enable the LEDs
   //
   LEDInit();
 
+#ifdef STATUS_CODES_ENABLED
   //
   // Enable timer interrupts
   //
-  statusCodeInterruptEnable();
+  statusCodeInterruptInit();
+#endif
 
   //
   // Enable the FPU
@@ -224,25 +253,33 @@ main(void) {
   //
   consoleInit();
 
+#ifdef GPS_ENABLED
   //
   // Enable the GPS
   //
   gpsInit();
+#endif
 
+#ifdef ACCEL_ENABLED
   //
   // Enable the accelerometer
   //
   accelInit();
+#endif
 
+#ifdef ALT_ENABLED
   //
   // Enable the altimeter
   //
   altInit();
+#endif
 
+#ifdef GYRO_ENABLED
   //
   // Enable the gyro
   //
   gyroInit();
+#endif
 
   //
   // Enable flash storage
@@ -253,6 +290,7 @@ main(void) {
   ///////////////////Gather Data/////////////////////////////
   //
 
+#ifdef ALT_ENABLED
   while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {}; // read coefficients
   altCRC = altCRC4(altCalibration); // calculate the CRC.
 
@@ -261,39 +299,48 @@ main(void) {
       setStatus(ALT_CRC_ERR);
     }
   }
+#endif
 
   while(FreeSpaceAvailable) {
+#ifdef ACCEL_ENABLED
     //
     // Get data from accelerometer
     //
     accelReceive(&accelData);
+    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%d,", accelData);
+#endif
 
+#ifdef ALT_ENABLED
     //
     // Get data from altimeter
     //
     altDataReceived = altReceive(ALT_BASE, ALT_ADDRESS, ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
+    if (altDataReceived) { // altimeter data was received
+        flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
+      }
+#endif
 
+#ifdef GPS_ENABLED
     //
     // Get data from GPS
     //
     gpsDataReceived = gpsReceive(&gpsSentence[0]);
-
-    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%d,", accelData);
-    if (altDataReceived) { // altimeter data was received
-      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
-    }
     if (gpsDataReceived) { // gps data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%s,", flashWriteBuffer, gpsSentence);
     }
+#endif
+
     flashWriteBuffer[flashWriteBufferSize-1] = '\n'; // Overwrite last comma with a \n
     flashWriteBuffer[flashWriteBufferSize] = '\r'; // Add a \r
     flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Terminate string with a null
 
+#ifdef DEBUG_FLASH
     //
     // Send write buffer over UART for debugging
     //
-    // UARTprintf("%s", flashWriteBuffer);
-    // delay(1000);
+    UARTprintf("%s", flashWriteBuffer);
+    delay(DEBUG_FLASH_DELAY);
+#endif
 
     //
     // Write data to flash
@@ -478,6 +525,41 @@ Timer0IntHandler(void) { // timer interrupt to handle beep codes
 //
 //*****************************************************************************
 void
+accelInit(void) {
+  //
+  // Enable the peripherals used by the accelerometer
+  //
+  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+
+  //
+  // Configure GPIO PE3 as ADC0 for accelerometer
+  //
+  MAP_GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
+
+  //
+  // Configure ADC0 on sequence 3
+  //
+  MAP_ADCSequenceDisable(ADC0_BASE, 3);
+  MAP_ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
+  MAP_ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
+  MAP_ADCSequenceEnable(ADC0_BASE, 3);
+
+  // Enable ADC interupts
+  MAP_ADCIntEnable(ADC0_BASE, 3);
+  MAP_ADCIntClear(ADC0_BASE, 3);
+}
+void
+altInit(void) {
+  //
+  // Enable the I2C module used by the altimeter
+  //
+  I2CInit(ALT_BASE, ALT_SPEED);
+
+  // Reset altimeter
+  while (!altReset(ALT_BASE, ALT_ADDRESS)) {}
+}
+void
 FPUInit(void) {
   //
   // Enable the floating-point unit
@@ -488,20 +570,6 @@ FPUInit(void) {
   // Configure the floating-point unit to perform lazy stacking of the floating-point state.
   //
   MAP_FPULazyStackingEnable();
-}
-void
-LEDInit(void) {
-  //
-  // Enable the peripherals used by the on-board LED.
-  //
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-
-  //
-  // Enable the GPIO pins for the RGB LED.
-  //
-  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED);
-  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
-  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, BLUE_LED);
 }
 void
 consoleInit(void) {
@@ -545,41 +613,6 @@ gpsInit(void) {
                           UART_CONFIG_STOP_ONE));
 }
 void
-accelInit(void) {
-  //
-  // Enable the peripherals used by the accelerometer
-  //
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-
-  //
-  // Configure GPIO PE3 as ADC0 for accelerometer
-  //
-  MAP_GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
-
-  //
-  // Configure ADC0 on sequence 3
-  //
-  MAP_ADCSequenceDisable(ADC0_BASE, 3);
-  MAP_ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
-  MAP_ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
-  MAP_ADCSequenceEnable(ADC0_BASE, 3);
-
-  // Enable ADC interupts
-  MAP_ADCIntEnable(ADC0_BASE, 3);
-  MAP_ADCIntClear(ADC0_BASE, 3);
-}
-void
-altInit(void) {
-  //
-  // Enable the I2C module used by the altimeter
-  //
-  I2CInit(ALT_BASE, ALT_SPEED);
-
-  // Reset altimeter
-  while (!altReset(ALT_BASE, ALT_ADDRESS)) {}
-}
-void
 gyroInit(void) {
   //
   // Enable the I2C module used by the gyro
@@ -587,274 +620,6 @@ gyroInit(void) {
   I2CInit(GYRO_BASE, GYRO_SPEED);
 
   gyroStartup(GYRO_BASE, GYRO_ADDRESS);
-}
-void
-statusCodeInterruptEnable(void) {
-#ifdef BEEP_CODES_ENABLED
-  //
-  // Enable the perifpherals used by the timer interrupts
-  //
-  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-
-  //
-  // Enable processor interrupts.
-  //
-  MAP_IntMasterEnable();
-
-  //
-  // Configure the 32-bit periodic timer for 4Hz.
-  //
-  ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-  ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, ROM_SysCtlClockGet() / 4);
-
-  //
-  // Setup the interrupts for the timer timeouts.
-  //
-  ROM_IntEnable(INT_TIMER0A);
-  ROM_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-
-  //
-  // Enable the timer.
-  //
-  ROM_TimerEnable(TIMER0_BASE, TIMER_A);
-#endif
-}
-
-//*****************************************************************************
-//
-// Device Functions
-//
-//*****************************************************************************
-void
-LEDOn(uint8_t ui8Color) {
-  MAP_GPIOPinWrite(GPIO_PORTF_BASE, ui8Color, ui8Color);
-}
-void
-LEDOff(uint8_t ui8Color) {
-  MAP_GPIOPinWrite(GPIO_PORTF_BASE, ui8Color, 0);
-}
-bool
-gpsReceive(uint8_t* ui8Buffer) {
-  MAP_IntMasterDisable();
-  uint32_t ui32bIndex = 0;
-  uint8_t command[5] = {'G','P','G','G','A'}, newChar, i;
-  bool match = true; // If a match was found. Assume match is true until proven otherwise
-
-  if (MAP_UARTCharsAvail(UART4_BASE)) { // Find out if GPS has data available
-
-    newChar = MAP_UARTCharGet(UART4_BASE);
-
-    if ( newChar == '$') { // find start of a string of info
-      ui8Buffer[ui32bIndex] = newChar; ui32bIndex++; // Add $ as delimiter
-      for (i = 0; i < 5; i++) {
-        newChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
-        if (newChar == command[i]) { // validate match assumption
-          ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
-        }
-        else {
-          match = false; // Assumption was wrong. Break and retry.
-          break;
-        }
-      }
-
-      //if the opening string matched "GPGGA", start processing the data feed
-      if (match) {
-        while (true) {
-          newChar = MAP_UARTCharGet(UART4_BASE); // collect the rest of the GPS log
-          if (newChar == '*')  break; // If the character is a star, break the loop
-          ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
-        }
-        ui8Buffer[ui32bIndex] = ','; ui32bIndex++; // Delimit checksum data
-        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 1st checksum number
-        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 2nd checksum number
-
-        // Add null terminator to end of GPS data
-        ui8Buffer[ui32bIndex] = '\0';
-        MAP_IntMasterEnable();
-        return true;
-      }
-    } //If char == $
-  }
-  MAP_IntMasterEnable();
-  return false;
-}
-void
-accelReceive(uint32_t* ui32ptrData) {
-  MAP_IntMasterDisable();
-  MAP_ADCProcessorTrigger(ADC0_BASE, 3);
-  while(!MAP_ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
-  MAP_ADCIntClear(ADC0_BASE, 3);
-  MAP_ADCSequenceDataGet(ADC0_BASE, 3, ui32ptrData);
-  MAP_IntMasterEnable();
-}
-bool
-altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData) {
-  uint32_t ret[3];
-
-  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_CONV+ui8Cmd)) {
-    setStatus(ALT_ADC_CONV_ERR);
-    UARTprintf("ALT_ADC_CONV write error\n\r");
-    return false;
-  }
-  switch(ui8Cmd & 0x0F) {
-    case ALT_ADC_256:  delay(ALT_256_DELAY);  break;
-    case ALT_ADC_512:  delay(ALT_512_DELAY);  break;
-    case ALT_ADC_1024: delay(ALT_1024_DELAY); break;
-    case ALT_ADC_2048: delay(ALT_2048_DELAY); break;
-    case ALT_ADC_4096: delay(ALT_4096_DELAY); break;
-  }
-
-  //
-  // Tell altimeter to send data to launchpad
-  //
-  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_READ)) {
-    setStatus(ALT_ADC_R_WRITE_ERR);
-    UARTprintf("ALT_ADC_READ write error\n\r");
-    return false;
-  }
-
-  //
-  // Start receiving data from altimeter
-  //
-  if (!I2CBurstRead(ALT_BASE, ALT_ADDRESS, &ret[0], 3)) {
-    setStatus(ALT_ADC_R_READ_ERR);
-    UARTprintf("ALT_ADC_READ read error\n\r");
-    return false;
-  }
-
-  *ui32ptrData = (65536*ret[0]) + (256 * ret[1]) + ret[2];
-  return true;
-}
-uint8_t
-altCRC4(uint16_t ui16nProm[8]) {
-  int32_t cnt; // simple counter
-  uint16_t n_rem = 0x00; // crc reminder
-  uint16_t crc_read = ui16nProm[7]; // original value of the crc
-  uint8_t n_bit;
-  ui16nProm[7]=(0xFF00 & (ui16nProm[7])); //CRC byte is replaced by 0
-  for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
-  { // choose LSB or MSB
-    if (cnt%2==1) {
-      n_rem ^= (ui16nProm[cnt>>1]) & 0x00FF;
-    }
-    else {
-      n_rem ^= ui16nProm[cnt>>1]>>8;
-    }
-    for (n_bit = 8; n_bit > 0; n_bit--)
-    {
-      if (n_rem & (0x8000))
-      {
-        n_rem = (n_rem << 1) ^ 0x3000;
-      }
-      else
-      {
-        n_rem = (n_rem << 1);
-      }
-    }
-  }
-  n_rem= (0x000F & (n_rem >> 12)); // final 4-bit reminder is CRC code
-  ui16nProm[7]=crc_read; // restore the crc_read to its original place
-  return (n_rem ^ 0x0);
-}
-bool
-altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
-  uint32_t i;
-  uint32_t ret[2];
-  for (i = 0; i < 8; i++) {
-    if (!I2CWrite(ui32Base, ui8AltAddr, ALT_PROM_READ+(i*2))) {
-      setStatus(ALT_PROM_R_WRITE_ERR);
-      UARTprintf("ALT_PROM_READ write error\n\r");
-      return false;
-    }
-    if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 2)) {
-      while (!setStatus(ALT_PROM_R_READ_ERR)) {};
-      UARTprintf("ALT_PROM_READ read error\n\r");
-      return false;
-    }
-    ui16nProm[i] = ((256 * ret[0]) + ret[1]);
-  }
-  return true;
-}
-bool
-altReset(uint32_t ui32Base, uint8_t ui8AltAddr) {
-  if (!I2CWrite(ui32Base, ui8AltAddr, ALT_RESET)) {
-    while (!setStatus(ALT_RESET_ERR)) {};
-    UARTprintf("ALT_RESET write error\n\r");
-    return false;
-  }
-  delay(ALT_RESET_DELAY);
-  return true;
-}
-bool
-altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
-{
-  // Digital pressure and temp
-  uint32_t D1 = 0;   // ADC value of the pressure conversion
-  uint32_t D2 = 0;   // ADC value of the temperature conversion
-
-  // Temp difference, offsets, and sensitivities
-  int32_t  dT    = 0; // difference between actual and measured temperature
-  int32_t  T2    = 0; // second order temperature offset
-  int64_t  OFF   = 0; // offset at actual temperature
-  int64_t  OFF2  = 0; // second order offset at actual temperature
-  int64_t  SENS  = 0; // sensitivity at actual temperature
-  int64_t  SENS2 = 0; // second order sensitivity at actual temperature
-
-  if (altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D2+ui8OSR, &D2)) {
-    // Calculate 1st order pressure and temperature
-
-    // Calculate 1st order temp difference, offset, and sensitivity (MS5607 1st order algorithm)
-    dT=D2-ui16Calibration[5]*pow(2,8);
-    OFF=ui16Calibration[2]*pow(2,17)+dT*ui16Calibration[4]/pow(2,6);
-    SENS=ui16Calibration[1]*pow(2,16)+dT*ui16Calibration[3]/pow(2,7);
-
-    // Calculate temperature
-    *fTemp=(2000+(dT*ui16Calibration[6])/pow(2,23))/100;
-
-    // Calculate 2nd order temp difference, offset, and sensitivity (MS5607 2nd order algorithm)
-    if (*fTemp < 20) {
-      T2 = pow(dT, 2)/pow(2,31);
-      OFF2 = 61*pow((*fTemp-2000),2)/pow(2,4);
-      SENS2 = 2*pow((*fTemp-2000),2);
-      if (*fTemp < -15)
-      {
-        OFF2 = OFF2+15*pow((*fTemp+1500),2);
-        SENS2 = SENS2+8*pow((*fTemp+1500),2);
-      }
-    }
-    *fTemp = *fTemp - T2;
-    OFF = OFF - OFF2;
-    SENS = SENS - SENS2;
-
-    // Calculate pressure
-    *fPressure=((D1*SENS)/pow(2,21)-OFF)/pow(2,15)/100;
-
-    // Calculate altitude (in feet)
-    // TODO: Convert to meters
-    *fAltitude = (1-pow((*fPressure/1013.25),.190284))*145366.45;
-    return true;
-  }
-  return false;
-}
-void
-gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr) {
-	/*
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG2);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG3);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG4);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG5);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_REFERENCE);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_THS);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_DUR);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_INT1_CFG);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG5);
-  I2CWrite(ui32Base, ui8GyroAddr, GYRO_CTRL_REG1);
-  */
-}
-bool
-gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr) {
-  // TODO: Create Gyro Recieve code
-  return false;
 }
 void
 I2CInit(uint32_t ui32Base, bool bSpeed) {
@@ -881,6 +646,9 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
       break;
     }
     case I2C1_BASE: {
+      //
+      // Enable Peripherals used by I2C1
+      //
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C1);
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 
@@ -899,6 +667,9 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
       break;
     }
     case I2C2_BASE: {
+      //
+      // Enable Peripherals used by I2C2
+      //
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 
@@ -917,6 +688,9 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
       break;
     }
     case I2C3_BASE: {
+      //
+      // Enable Peripherals used by I2C3
+      //
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C3);
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 
@@ -946,253 +720,22 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
   //
   MAP_I2CMasterEnable(ui32Base);
 }
-bool
-I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
+void
+LEDInit(void) {
   //
-  // Tell the master module what address it will place on the bus when
-  // reading from the slave.
+  // Enable the peripherals used by the on-board LED.
   //
-  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
+  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
   //
-  // Disable Interrupts to prevent I2C comm failure
+  // Enable the GPIO pins for the RGB LED.
   //
-  MAP_IntMasterDisable();
-
-  //
-  // Tell the master to read data.
-  //
-  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_RECEIVE);
-
-  //
-  // Wait until master module is done receiving.
-  //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
-
-  //
-  // Reenable Interrupts
-  //
-  MAP_IntMasterEnable();
-
-  //
-  // Check for errors.
-  //
-  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
-
-  //
-  // Get data
-  //
-  *ui32ptrData = MAP_I2CMasterDataGet(ui32Base);
-
-  //
-  // return the data from the master.
-  //
-  return true;
-}
-bool
-I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
-  MAP_IntMasterDisable();
-  //
-  // Tell the master module what address it will place on the bus when
-  // writing to the slave.
-  //
-  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
-
-  //
-  // Place the command to be sent in the data register.
-  //
-  MAP_I2CMasterDataPut(ui32Base, ui8SendData);
-
-  //
-  // Disable Interrupts to prevent I2C comm failure
-  //
-  MAP_IntMasterDisable();
-
-  //
-  // Initiate send of data from the master.
-  //
-  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_SEND);
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
-
-  //
-  // Reenable Interrupts
-  //
-  MAP_IntMasterEnable();
-
-  //
-  // Check for errors.
-  //
-  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
-
-  //
-  // Return 1 if there is no error.
-  //
-  return true;
-}
-bool
-I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size) {
-  MAP_IntMasterDisable();
-  //
-  // Use I2C single read if theres only 1 item to receive
-  //
-  if (ui32Size == 1)
-    return I2CRead(ui32Base, ui8SlaveAddr, &ui32ptrReadData[0]);
-
-  uint32_t ui32ByteCount;        // local variable used for byte counting/state determination
-  uint32_t MasterOptionCommand; // used to assign the control commands
-
-  //
-  // Tell the master module what address it will place on the bus when
-  // reading from the slave.
-  //
-  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
-
-  //
-  // Start with BURST with more than one byte to read
-  //
-  MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_START;
-
-  for(ui32ByteCount = 0; ui32ByteCount < ui32Size; ui32ByteCount++)
-  {
-    //
-    // The second and intermittent byte has to be read with CONTINUE control word
-    //
-    if(ui32ByteCount == 1)
-      MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_CONT;
-
-    //
-    // The last byte has to be send with FINISH control word
-    //
-    if(ui32ByteCount == ui32Size - 1)
-      MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_FINISH;
-
-    //
-    // Disable Interrupts to prevent I2C comm failure
-    //
-    MAP_IntMasterDisable();
-
-    //
-    // Initiate read of data from the slave.
-    //
-    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
-
-    //
-    // Wait until master module is done reading.
-    //
-    while(MAP_I2CMasterBusy(ui32Base)) {};
-
-    //
-    // Reenable Interrupts
-    //
-    MAP_IntMasterEnable();
-
-    //
-    // Check for errors.
-    //
-    if (MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
-
-    //
-    // Move byte from register
-    //
-    ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(ui32Base);
-  }
-
-
-  //
-  // Return 1 if there is no error.
-  //
-  return true;
-}
-bool
-I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size) {
-  //
-  // Use I2C single write if theres only 1 item to send
-  //
-  if (ui32Size == 1) {
-    MAP_IntMasterEnable();
-    return I2CWrite(ui32Base, ui8SlaveAddr, ui8SendData[0]);
-  }
-
-  uint32_t uiByteCount;         // local variable used for byte counting/state determination
-  uint32_t MasterOptionCommand; // used to assign the control commands
-
-  //
-  // Tell the master module what address it will place on the bus when
-  // writing to the slave.
-  //
-  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(ui32Base)) {};
-
-  //
-  // The first byte has to be sent with the START control word
-  //
-  MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_START;
-
-  for(uiByteCount = 0; uiByteCount < ui32Size; uiByteCount++)
-  {
-    //
-    // The second and intermittent byte has to be send with CONTINUE control word
-    //
-    if(uiByteCount == 1)
-      MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_CONT;
-
-    //
-    // The last byte has to be send with FINISH control word
-    //
-    if(uiByteCount == ui32Size - 1)
-      MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_FINISH;
-
-    //
-    // Send data byte
-    //
-    MAP_I2CMasterDataPut(ui32Base, ui8SendData[uiByteCount]);
-
-    //
-    // Disable Interrupts to prevent I2C comm failure
-    //
-    MAP_IntMasterDisable();
-
-    //
-    //
-    // Initiate send of data from the master.
-    //
-    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
-
-    //
-    //
-    // Wait until master module is done transferring.
-    //
-    while(MAP_I2CMasterBusy(ui32Base)) {};
-
-    //
-    // Reenable Interrupts
-    //
-    MAP_IntMasterEnable();
-
-    //
-    // Check for errors.
-    //
-    if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
-  }
-
-  //
-  // Return 1 if there is no error.
-  //
-  return true;
+  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED);
+  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
+  MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, BLUE_LED);
 }
 void
-SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode,
-        uint32_t ui32BitRate, uint32_t ui32DataWidth) {
-	// TODO: GET GPIO_LOCK DEFINES
-	/*
+SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth) {
   switch (ui32Base) {
     case SSI0_BASE: {
       MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
@@ -1325,5 +868,533 @@ SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode,
   // Enable supplied SSI Base Master Block
   //
   MAP_SSIEnable(ui32Base);
-  */
+}
+void
+statusCodeInterruptInit(void) {
+  //
+  // Enable the perifpherals used by the timer interrupts
+  //
+  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+
+  //
+  // Enable processor interrupts.
+  //
+  MAP_IntMasterEnable();
+
+  //
+  // Configure the 32-bit periodic timer for 4Hz.
+  //
+  MAP_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
+  MAP_TimerLoadSet(TIMER0_BASE, TIMER_A, MAP_SysCtlClockGet() / 4);
+
+  //
+  // Setup the interrupts for the timer timeouts.
+  //
+  MAP_IntEnable(INT_TIMER0A);
+  MAP_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+
+  //
+  // Enable the timer.
+  //
+  MAP_TimerEnable(TIMER0_BASE, TIMER_A);
+}
+
+//*****************************************************************************
+//
+// Device Functions
+//
+//*****************************************************************************
+void
+LEDOn(uint8_t ui8Color) {
+  MAP_GPIOPinWrite(GPIO_PORTF_BASE, ui8Color, ui8Color);
+}
+void
+LEDOff(uint8_t ui8Color) {
+  MAP_GPIOPinWrite(GPIO_PORTF_BASE, ui8Color, 0x0);
+}
+  // Receive Functions
+void
+accelReceive(uint32_t* ui32ptrData) {
+  MAP_IntMasterDisable();
+  MAP_ADCProcessorTrigger(ADC0_BASE, 3);
+  while(!MAP_ADCIntStatus(ADC0_BASE, 3, false)) {} // wait for a2d conversion
+  MAP_ADCIntClear(ADC0_BASE, 3);
+  MAP_ADCSequenceDataGet(ADC0_BASE, 3, ui32ptrData);
+  MAP_IntMasterEnable();
+}
+bool
+altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fTemp, float* fPressure, float* fAltitude)
+{
+  // Digital pressure and temp
+  uint32_t D1 = 0;   // ADC value of the pressure conversion
+  uint32_t D2 = 0;   // ADC value of the temperature conversion
+
+  // Temp difference, offsets, and sensitivities
+  int32_t  dT    = 0; // difference between actual and measured temperature
+  int32_t  T2    = 0; // second order temperature offset
+  int64_t  OFF   = 0; // offset at actual temperature
+  int64_t  OFF2  = 0; // second order offset at actual temperature
+  int64_t  SENS  = 0; // sensitivity at actual temperature
+  int64_t  SENS2 = 0; // second order sensitivity at actual temperature
+
+  if (altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ui32Base, ui8AltAddr, ALT_ADC_D2+ui8OSR, &D2)) {
+    // Calculate 1st order pressure and temperature
+
+    // Calculate 1st order temp difference, offset, and sensitivity (MS5607 1st order algorithm)
+    dT=D2-ui16Calibration[5]*pow(2,8);
+    OFF=ui16Calibration[2]*pow(2,17)+dT*ui16Calibration[4]/pow(2,6);
+    SENS=ui16Calibration[1]*pow(2,16)+dT*ui16Calibration[3]/pow(2,7);
+
+    // Calculate temperature
+    *fTemp=(2000+(dT*ui16Calibration[6])/pow(2,23))/100;
+
+    // Calculate 2nd order temp difference, offset, and sensitivity (MS5607 2nd order algorithm)
+    if (*fTemp < 20) {
+      T2 = pow(dT, 2)/pow(2,31);
+      OFF2 = 61*pow((*fTemp-2000),2)/pow(2,4);
+      SENS2 = 2*pow((*fTemp-2000),2);
+      if (*fTemp < -15)
+      {
+        OFF2 = OFF2+15*pow((*fTemp+1500),2);
+        SENS2 = SENS2+8*pow((*fTemp+1500),2);
+      }
+    }
+    *fTemp = *fTemp - T2;
+    OFF = OFF - OFF2;
+    SENS = SENS - SENS2;
+
+    // Calculate pressure
+    *fPressure=((D1*SENS)/pow(2,21)-OFF)/pow(2,15)/100;
+
+    // Calculate altitude (in feet)
+    // TODO: Convert to meters
+    *fAltitude = (1-pow((*fPressure/1013.25),.190284))*145366.45;
+    return true;
+  }
+  return false;
+}
+bool
+gpsReceive(uint8_t* ui8Buffer) {
+  MAP_IntMasterDisable();
+  uint32_t ui32bIndex = 0;
+  uint8_t command[5] = {'G','P','G','G','A'}, newChar, i;
+  bool match = true; // If a match was found. Assume match is true until proven otherwise
+
+  if (MAP_UARTCharsAvail(UART4_BASE)) { // Find out if GPS has data available
+
+    newChar = MAP_UARTCharGet(UART4_BASE);
+
+    if ( newChar == '$') { // find start of a string of info
+      ui8Buffer[ui32bIndex] = newChar; ui32bIndex++; // Add $ as delimiter
+      for (i = 0; i < 5; i++) {
+        newChar = MAP_UARTCharGet(UART4_BASE); // collect the next five characters
+        if (newChar == command[i]) { // validate match assumption
+          ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
+        }
+        else {
+          match = false; // Assumption was wrong. Break and retry.
+          break;
+        }
+      }
+
+      //if the opening string matched "GPGGA", start processing the data feed
+      if (match) {
+        while (true) {
+          newChar = MAP_UARTCharGet(UART4_BASE); // collect the rest of the GPS log
+          if (newChar == '*')  break; // If the character is a star, break the loop
+          ui8Buffer[ui32bIndex] = newChar; ui32bIndex++;
+        }
+        ui8Buffer[ui32bIndex] = ','; ui32bIndex++; // Delimit checksum data
+        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 1st checksum number
+        ui8Buffer[ui32bIndex] = MAP_UARTCharGet(UART4_BASE); ui32bIndex++; // Collect 2nd checksum number
+
+        // Add null terminator to end of GPS data
+        ui8Buffer[ui32bIndex] = '\0';
+        MAP_IntMasterEnable();
+        return true;
+      }
+    } //If char == $
+  }
+  MAP_IntMasterEnable();
+  return false;
+}
+bool
+gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr) {
+  // TODO: Create Gyro Recieve code
+  return false;
+}
+  // Altimeter Functions
+bool
+altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData) {
+  uint32_t ret[3];
+
+  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_CONV+ui8Cmd)) {
+    setStatus(ALT_ADC_CONV_ERR);
+    UARTprintf("ALT_ADC_CONV write error\n\r");
+    return false;
+  }
+  switch(ui8Cmd & 0x0F) {
+    case ALT_ADC_256:  delay(ALT_256_DELAY);  break;
+    case ALT_ADC_512:  delay(ALT_512_DELAY);  break;
+    case ALT_ADC_1024: delay(ALT_1024_DELAY); break;
+    case ALT_ADC_2048: delay(ALT_2048_DELAY); break;
+    case ALT_ADC_4096: delay(ALT_4096_DELAY); break;
+  }
+
+  //
+  // Tell altimeter to send data to launchpad
+  //
+  if (!I2CWrite(ALT_BASE, ALT_ADDRESS, ALT_ADC_READ)) {
+    setStatus(ALT_ADC_R_WRITE_ERR);
+    UARTprintf("ALT_ADC_READ write error\n\r");
+    return false;
+  }
+
+  //
+  // Start receiving data from altimeter
+  //
+  if (!I2CBurstRead(ALT_BASE, ALT_ADDRESS, &ret[0], 3)) {
+    setStatus(ALT_ADC_R_READ_ERR);
+    UARTprintf("ALT_ADC_READ read error\n\r");
+    return false;
+  }
+
+  *ui32ptrData = (65536*ret[0]) + (256 * ret[1]) + ret[2];
+  return true;
+}
+uint8_t
+altCRC4(uint16_t ui16nProm[8]) {
+  int32_t cnt; // simple counter
+  uint16_t n_rem = 0x00; // crc reminder
+  uint16_t crc_read = ui16nProm[7]; // original value of the crc
+  uint8_t n_bit;
+  ui16nProm[7]=(0xFF00 & (ui16nProm[7])); //CRC byte is replaced by 0
+  for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
+  { // choose LSB or MSB
+    if (cnt%2==1) {
+      n_rem ^= (ui16nProm[cnt>>1]) & 0x00FF;
+    }
+    else {
+      n_rem ^= ui16nProm[cnt>>1]>>8;
+    }
+    for (n_bit = 8; n_bit > 0; n_bit--)
+    {
+      if (n_rem & (0x8000))
+      {
+        n_rem = (n_rem << 1) ^ 0x3000;
+      }
+      else
+      {
+        n_rem = (n_rem << 1);
+      }
+    }
+  }
+  n_rem= (0x000F & (n_rem >> 12)); // final 4-bit reminder is CRC code
+  ui16nProm[7]=crc_read; // restore the crc_read to its original place
+  return (n_rem ^ 0x0);
+}
+bool
+altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
+  uint32_t i;
+  uint32_t ret[2];
+  for (i = 0; i < 8; i++) {
+    if (!I2CWrite(ui32Base, ui8AltAddr, ALT_PROM_READ+(i*2))) {
+      setStatus(ALT_PROM_R_WRITE_ERR);
+      UARTprintf("ALT_PROM_READ write error\n\r");
+      return false;
+    }
+    if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 2)) {
+      while (!setStatus(ALT_PROM_R_READ_ERR)) {};
+      UARTprintf("ALT_PROM_READ read error\n\r");
+      return false;
+    }
+    ui16nProm[i] = ((256 * ret[0]) + ret[1]);
+  }
+  return true;
+}
+bool
+altReset(uint32_t ui32Base, uint8_t ui8AltAddr) {
+  if (!I2CWrite(ui32Base, ui8AltAddr, ALT_RESET)) {
+    while (!setStatus(ALT_RESET_ERR)) {};
+    UARTprintf("ALT_RESET write error\n\r");
+    return false;
+  }
+  delay(ALT_RESET_DELAY);
+  return true;
+}
+  // Gyro Functions
+void
+gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr) {
+  uint8_t ui8Data[2];
+  ui8Data[0] = GYRO_CTRL_REG1;
+  ui8Data[1] = 0x1F;
+  I2CBurstWrite(ui32Base, ui8GyroAddr, ui8Data, 2);
+  ui8Data[0] = GYRO_CTRL_REG3;
+  ui8Data[1] = 0x08;
+  I2CBurstWrite(ui32Base, ui8GyroAddr, ui8Data, 2);
+  ui8Data[0] = GYRO_CTRL_REG4;
+  ui8Data[1] = 0x80;
+  I2CBurstWrite(ui32Base, ui8GyroAddr, ui8Data, 2);
+  delay(GYRO_STARTUP_DELAY);
+}
+  // I2C Functions
+bool
+I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
+  //
+  // Wait for the I2C Bus to finish
+  //
+  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+
+  //
+  // Tell the master module what address it will place on the bus when
+  // reading from the slave.
+  //
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
+
+  //
+  // Disable Interrupts to prevent I2C comm failure
+  //
+  MAP_IntMasterDisable();
+
+  //
+  // Tell the master to read data.
+  //
+  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_RECEIVE);
+
+  //
+  // Wait until master module is done receiving.
+  //
+  while(MAP_I2CMasterBusy(ui32Base)) {};
+
+  //
+  // Reenable Interrupts
+  //
+  MAP_IntMasterEnable();
+
+  //
+  // Check for errors.
+  //
+  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE)
+    return false;
+
+  //
+  // Get data
+  //
+  *ui32ptrData = MAP_I2CMasterDataGet(ui32Base);
+
+  //
+  // return the data from the master.
+  //
+  return true;
+}
+bool
+I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
+  //
+  // Wait for the I2C Bus to finish
+  //
+  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+
+  //
+  // Tell the master module what address it will place on the bus when
+  // writing to the slave.
+  //
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
+
+  //
+  // Place the command to be sent in the data register.
+  //
+  MAP_I2CMasterDataPut(ui32Base, ui8SendData);
+
+  //
+  // Disable Interrupts to prevent I2C comm failure
+  //
+  MAP_IntMasterDisable();
+
+  //
+  // Initiate send of data from the master.
+  //
+  MAP_I2CMasterControl(ui32Base, I2C_MASTER_CMD_SINGLE_SEND);
+
+  //
+  // Wait until master module is done transferring.
+  //
+  while(MAP_I2CMasterBusy(ui32Base)) {};
+
+  //
+  // Reenable Interrupts
+  //
+  MAP_IntMasterEnable();
+
+  //
+  // Check for errors.
+  //
+  if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE)
+    return false;
+
+  //
+  // Return 1 if there is no error.
+  //
+  return true;
+}
+bool
+I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size) {
+  //
+  // Use I2C single read if theres only 1 item to receive
+  //
+  if (ui32Size == 1)
+    return I2CRead(ui32Base, ui8SlaveAddr, &ui32ptrReadData[0]);
+
+  uint32_t ui32ByteCount;        // local variable used for byte counting/state determination
+  uint32_t MasterOptionCommand; // used to assign the control commands
+
+  //
+  // Wait for the I2C Bus to finish
+  //
+  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+
+  //
+  // Tell the master module what address it will place on the bus when
+  // reading from the slave.
+  //
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_READ);
+
+  //
+  // Start with BURST with more than one byte to read
+  //
+  MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_START;
+
+  for(ui32ByteCount = 0; ui32ByteCount < ui32Size; ui32ByteCount++)
+  {
+    //
+    // The second and intermittent byte has to be read with CONTINUE control word
+    //
+    if(ui32ByteCount == 1)
+      MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_CONT;
+
+    //
+    // The last byte has to be send with FINISH control word
+    //
+    if(ui32ByteCount == ui32Size - 1)
+      MasterOptionCommand = I2C_MASTER_CMD_BURST_RECEIVE_FINISH;
+
+    //
+    // Disable Interrupts to prevent I2C comm failure
+    //
+    MAP_IntMasterDisable();
+
+    //
+    // Initiate read of data from the slave.
+    //
+    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
+
+    //
+    // Wait until master module is done reading.
+    //
+    while(MAP_I2CMasterBusy(ui32Base)) {};
+
+    //
+    // Reenable Interrupts
+    //
+    MAP_IntMasterEnable();
+
+    //
+    // Check for errors.
+    //
+    if (MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE)
+      return false;
+
+    //
+    // Move byte from register
+    //
+    ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(ui32Base);
+  }
+
+  //
+  // Return 1 if there is no error.
+  //
+  return true;
+}
+bool
+I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size) {
+  //
+  // Use I2C single write if theres only 1 item to send
+  //
+  if (ui32Size == 1)
+    return I2CWrite(ui32Base, ui8SlaveAddr, ui8SendData[0]);
+
+  uint32_t uiByteCount;         // local variable used for byte counting/state determination
+  uint32_t MasterOptionCommand; // used to assign the control commands
+
+  //
+  // Wait for the I2C Bus to finish
+  //
+  while(MAP_I2CMasterBusBusy(ui32Base)) {};
+
+  //
+  // Tell the master module what address it will place on the bus when
+  // writing to the slave.
+  //
+  MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
+
+  //
+  // Wait until master module is done transferring.
+  //
+  while(MAP_I2CMasterBusy(ui32Base)) {};
+
+  //
+  // The first byte has to be sent with the START control word
+  //
+  MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_START;
+
+  for(uiByteCount = 0; uiByteCount < ui32Size; uiByteCount++)
+  {
+    //
+    // The second and intermittent byte has to be send with CONTINUE control word
+    //
+    if(uiByteCount == 1)
+      MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_CONT;
+
+    //
+    // The last byte has to be send with FINISH control word
+    //
+    if(uiByteCount == ui32Size - 1)
+      MasterOptionCommand = I2C_MASTER_CMD_BURST_SEND_FINISH;
+
+    //
+    // Send data byte
+    //
+    MAP_I2CMasterDataPut(ui32Base, ui8SendData[uiByteCount]);
+
+    //
+    // Disable Interrupts to prevent I2C comm failure
+    //
+    MAP_IntMasterDisable();
+
+    //
+    //
+    // Initiate send of data from the master.
+    //
+    MAP_I2CMasterControl(ui32Base, MasterOptionCommand);
+
+    //
+    //
+    // Wait until master module is done transferring.
+    //
+    while(MAP_I2CMasterBusy(ui32Base)) {};
+
+    //
+    // Reenable Interrupts
+    //
+    MAP_IntMasterEnable();
+
+    //
+    // Check for errors.
+    //
+    if(MAP_I2CMasterErr(ui32Base) != I2C_MASTER_ERR_NONE) return false;
+  }
+
+  //
+  // Return 1 if there is no error.
+  //
+  return true;
 }

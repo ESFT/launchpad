@@ -32,6 +32,11 @@ extern "C"
 #define GYRO_ADDRESS_SDO_HI 0x69
 
 //
+// Gyro Startup Delay
+//
+#define GYRO_STARTUP_DELAY 100
+
+//
 // Output register mapping
 //
 #define GYRO_WHO_AM_I      0x0F

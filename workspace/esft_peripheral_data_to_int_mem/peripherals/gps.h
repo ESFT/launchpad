@@ -21,7 +21,7 @@ extern "C"
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void gpsInit(void);
+extern void gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config);
 extern bool gpsReceive(uint8_t* ui8Buffer);
 
 //*****************************************************************************

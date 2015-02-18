@@ -139,7 +139,7 @@ BIN_OUTPUTS__QUOTED += \
 all: esft_peripheral_data_to_int_mem.out
 
 dependents:
-	-cd D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
+	-cd D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) all
 
 # Tool invocations
 esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib

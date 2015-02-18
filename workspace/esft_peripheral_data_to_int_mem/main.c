@@ -53,7 +53,7 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 //*****************************************************************************
 // Accelerometer
 #define ACCEL_ENABLED
-// #define ACCEL_BASE ADC0_BASE // TODO: Create functionality to specify ADC base and port
+#define ACCEL_BASE ADC0_BASE // TODO: Create functionality to specify ADC base and port
 
 // Altimeter
 #define ALT_ENABLED
@@ -76,6 +76,8 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 #define GYRO_BASE    I2C1_BASE
 #define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
 #define GYRO_SPEED   I2C_SPEED_400
+#define GYRO_NUM_SAMPLES 50    // Calibration Sample Count - As recommended in STMicro doc
+#define GYRO_SIGMA_MULTIPLE  3 // Calibration Sigma Multiple - As recommended
 
 // Status codes
 #define STATUS_CODES_ENABLED
@@ -172,15 +174,11 @@ main(void) {
   // TODO: Setup timer to be able to accurately determine heading from DPS
   // float gyroHeading[3]; // heading[x], heading[y], heading [z]
 
-  uint32_t gyroRaw[3];       // Raw gyro values
-  uint32_t gyroZeroRate[3];  // Calibration data. Needed because the sensor does center at zero, but rather always reports a small amount of rotation on each axis.
-  uint32_t gyroThreshold[3]; // Raw rate change data less than the statistically derived threshold is discarded.
-
   //
   // Enable the gyro
   //
   gyroInit(GYRO_BASE, GYRO_ADDRESS, GYRO_SPEED);
-  gyroCalibrate(GYRO_BASE, GYRO_ADDRESS, GYRO_NUM_SAMPLES, GYRO_SIGMA_MULTIPLE, &gyroZeroRate[0], &gyroThreshold[0], &gyroRaw[0], &gyroDPS[0]);
+  gyroCalibrate(GYRO_BASE, GYRO_ADDRESS, GYRO_NUM_SAMPLES, GYRO_SIGMA_MULTIPLE);
 #endif
 
   //
@@ -205,7 +203,7 @@ main(void) {
     //
     // Get data from accelerometer
     //
-    accelReceive(ACCEL_BASE, &accelData);
+    accelReceive(&accelData);
     flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accelData);
 #endif
 
@@ -216,7 +214,6 @@ main(void) {
     altDataReceived = altReceive(ALT_BASE, ALT_ADDRESS, ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
     if (altDataReceived) // altimeter data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
-    }
 #endif
 
 #ifdef GPS_ENABLED
@@ -232,7 +229,7 @@ main(void) {
     //
     // Get data from gyro
     //
-    gyroDataReceived = gyroReceive(GYRO_BASE, GYRO_ADDRESS, &gyroZeroRate[0], &gyroThreshold[0], &gyroRaw[0], &gyroDPS[0]);
+    gyroDataReceived = gyroReceive(GYRO_BASE, GYRO_ADDRESS, &gyroDPS[0]);
     if (gyroDataReceived) // gps data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, gyroDPS[0], gyroDPS[1], gyroDPS[2]);
 #endif

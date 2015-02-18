@@ -33,12 +33,6 @@ extern "C"
 #define GYRO_ADDRESS_SDO_HI 0x69
 
 //
-// Gyro Calibration
-//
-#define GYRO_NUM_SAMPLES 50    // As recommended in STMicro doc
-#define GYRO_SIGMA_MULTIPLE  3 // As recommended
-
-//
 // Gyro Delay
 //
 #define GYRO_STARTUP_DELAY 5
@@ -94,12 +88,12 @@ extern "C"
 #define GYRO_ODR800FC110  0x15<<4
 
 #define GYRO_PD           0x00<<3
-#define GYRO_Sleep        0x08
-#define GYRO_Normal       0x01<<3
+#define GYRO_SLEEP        0x08
+#define GYRO_NORMAL       0x01<<3
 
-#define GYRO_Zen          0x01<<2
-#define GYRO_Yen          0x01<<1
-#define GYRO_Xen          0x01
+#define GYRO_ZEN          0x01<<2
+#define GYRO_YEN          0x01<<1
+#define GYRO_XEN          0x01
 
 //Control Register 2
 #define GYRO_RESET_FILTER   0x00<<4
@@ -222,9 +216,25 @@ extern "C"
 //
 //*****************************************************************************
 extern void gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed);
-extern bool gyroStartup(uint32_t ui32Base, uint8_t ui8GyroAddr);
-extern void gyroCalibrate(uint32_t ui32Base, uint8_t ui8GyroAddr, uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple, uint32_t* ui32zRate, uint32_t* ui32Threshold, uint32_t* ui32Raw, float* fDPS);
-extern bool gyroReceive(uint32_t ui32Base, uint8_t ui8GyroAddr, uint32_t* ui32zRate, uint32_t* ui32Threshold, uint32_t* ui32Raw, float* fDPS);
+extern bool gyroStartup();
+extern void gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple);
+extern bool gyroReceive(float* fDPS);
+
+extern bool gyroTest();
+extern bool gyroConfigReg1(uint32_t ui32odr);
+extern bool gyroPowerDown();
+extern bool gyroSleep();
+extern bool gyroConfigReg2(uint32_t ui32bhr, uint32_t ui32hpf);
+extern bool gyroConfigReg3(uint32_t ui32intr);
+extern bool gyroDataConfig(uint32_t ui32upd, uint32_t ui32end, uint32_t ui32res);
+extern bool gyroSelfTest(uint32_t ui32test);
+extern bool gyroBoot(uint32_t ui32boot);
+extern bool gyroFIFO(uint32_t ui32fifo);
+extern bool gyroHPF(uint32_t ui32hpf);
+extern bool gyroINT1(uint32_t ui32int1);
+extern bool gyroOutSel(uint32_t ui32out);
+extern bool gyroReadXYZRaw(int16_t *x, int16_t *y, int16_t *z);
+extern bool gyroReadTemp(int8_t *ui8Temp);
 
 //*****************************************************************************
 //

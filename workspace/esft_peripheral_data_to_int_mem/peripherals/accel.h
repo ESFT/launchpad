@@ -27,7 +27,7 @@ extern "C"
 //
 //*****************************************************************************
 extern void accelInit(void);
-extern void accelReceive(uint32_t ui32Base, float* fptrForce);
+extern void accelReceive(float* fptrForce);
 
 //*****************************************************************************
 //

@@ -30,47 +30,6 @@
 #include "peripherals/status.h"
 #include "peripherals/uartstdio.h"
 
-//*****************************************************************************
-//
-// Peripheral defines
-//
-//*****************************************************************************
-
-// Accelerometer
-#define ACCEL_ENABLED
-#define ACCEL_BASE ADC0_BASE
-
-// Altimeter
-#define ALT_ENABLED
-#define ALT_BASE    I2C0_BASE
-#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
-#define ALT_SPEED   I2C_SPEED_400
-
-// Flash
-// Determines if flash debug output is enabled. Comment out to disable functionality
-#define DEBUG_FLASH
-#define DEBUG_FLASH_DELAY 500
-
-// GPS
-// #define GPS_ENABLED
-#define GPS_BASE UART4_BASE
-#define GPS_BAUD 9600
-#define GPS_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
-
-// Gyro
-// #define GYRO_ENABLED
-#define GYRO_BASE    I2C1_BASE
-#define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
-#define GYRO_SPEED   I2C_SPEED_400
-
-// Determines if status codes are enabled. Comment out to disable functionality
-#define STATUS_CODES_ENABLED
-
-//*****************************************************************************
-//
-// Prototypes
-//
-//*****************************************************************************
 #ifdef DEBUG
 //*****************************************************************************
 //
@@ -86,6 +45,40 @@ __error__(char *pcFilename, uint32_t ui32Line) {
   }
 }
 #endif
+
+//*****************************************************************************
+//
+// Peripheral defines
+//
+//*****************************************************************************
+// Accelerometer
+#define ACCEL_ENABLED
+// #define ACCEL_BASE ADC0_BASE // TODO: Create functionality to specify ADC base and port
+
+// Altimeter
+#define ALT_ENABLED
+#define ALT_BASE    I2C0_BASE
+#define ALT_ADDRESS ALT_ADDRESS_CSB_LO
+#define ALT_SPEED   I2C_SPEED_400
+
+// Flash
+#define DEBUG_FLASH
+#define DEBUG_FLASH_DELAY 500
+
+// GPS
+// #define GPS_ENABLED
+#define GPS_BASE UART4_BASE
+#define GPS_BAUD 9600
+#define GPS_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
+
+// Gyro
+// #define GYRO_ENABLED
+#define GYRO_BASE    I2C1_BASE
+#define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
+#define GYRO_SPEED   I2C_SPEED_400
+
+// Status codes
+#define STATUS_CODES_ENABLED
 
 //*****************************************************************************
 //
@@ -287,5 +280,3 @@ main(void) {
     }
   }
 }
-
-

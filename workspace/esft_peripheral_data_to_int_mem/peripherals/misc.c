@@ -14,14 +14,22 @@
 #include "uart.h"
 #include "uartstdio.h"
 
+bool consoleEnabled = false;
+
+bool
+consoleIsEnabled(void) {
+  return consoleEnabled;
+}
 void
 consoleInit(void) {
-  UARTInit(UART0_BASE);
+  UARTInit(CONSOLE_BASE);
 
   //
   // Configure UARTstdio Library
   //
   UARTStdioConfig(0, 115200, MAP_SysCtlClockGet());
+
+  consoleEnabled = true;
 }
 void
 delay(uint32_t ui32ms) { // Delay in milliseconds

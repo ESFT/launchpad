@@ -13,27 +13,12 @@
 #include "driverlib/uart.h"
 #include "inc/hw_memmap.h"
 #include "gps.h"
+#include "uart.h"
 
 void
-gpsInit(void) {
-  //
-  // Enable the peripherals used by the GPS.
-  //
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
-  MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-
-  //
-  // Set GPIO PC4 as U4RX for GPS int32_terface
-  //
-  MAP_GPIOPinConfigure(GPIO_PC4_U4RX);
-  MAP_GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4);
-
-  //
-  // Configure the UART for 9600, 8-N-1 operation.
-  //
-  MAP_UARTConfigSetExpClk(UART4_BASE, MAP_SysCtlClockGet(), 9600,
-                          (UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE |
-                          UART_CONFIG_STOP_ONE));
+gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config) {
+  UARTInit(ui32Base);
+  MAP_UARTConfigSetExpClk(ui32Base, MAP_SysCtlClockGet(), ui32Baud, ui32Config);
 }
 bool
 gpsReceive(uint8_t* ui8Buffer) {

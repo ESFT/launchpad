@@ -22,7 +22,7 @@ altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t
 
   if (!I2CWrite(ui32Base, ui8AltAddr, ALT_ADC_CONV+ui8Cmd)) {
     setStatus(ALT_ADC_CONV_ERR);
-    UARTprintf("ALT_ADC_CONV write error\n\r");
+    if (consoleIsEnabled()) UARTprintf("ALT_ADC_CONV write error\n\r");
     return false;
   }
   switch(ui8Cmd & 0x0F) {
@@ -38,7 +38,7 @@ altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t
   //
   if (!I2CWrite(ui32Base, ui8AltAddr, ALT_ADC_READ)) {
     setStatus(ALT_ADC_R_WRITE_ERR);
-    UARTprintf("ALT_ADC_READ write error\n\r");
+    if (consoleIsEnabled()) UARTprintf("ALT_ADC_READ write error\n\r");
     return false;
   }
 
@@ -47,7 +47,7 @@ altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t
   //
   if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 3)) {
     setStatus(ALT_ADC_R_READ_ERR);
-    UARTprintf("ALT_ADC_READ read error\n\r");
+    if (consoleIsEnabled()) UARTprintf("ALT_ADC_READ read error\n\r");
     return false;
   }
 
@@ -102,12 +102,12 @@ altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]) {
   for (i = 0; i < 8; i++) {
     if (!I2CWrite(ui32Base, ui8AltAddr, ALT_PROM_READ+(i*2))) {
       setStatus(ALT_PROM_R_WRITE_ERR);
-      UARTprintf("ALT_PROM_READ write error\n\r");
+      if (consoleIsEnabled()) UARTprintf("ALT_PROM_READ write error\n\r");
       return false;
     }
     if (!I2CBurstRead(ui32Base, ui8AltAddr, &ret[0], 2)) {
       while (!setStatus(ALT_PROM_R_READ_ERR)) {}
-      UARTprintf("ALT_PROM_READ read error\n\r");
+      if (consoleIsEnabled()) UARTprintf("ALT_PROM_READ read error\n\r");
       return false;
     }
     ui16nProm[i] = ((256 * ret[0]) + ret[1]);
@@ -169,7 +169,7 @@ bool
 altReset(uint32_t ui32Base, uint8_t ui8AltAddr) {
   if (!I2CWrite(ui32Base, ui8AltAddr, ALT_RESET)) {
     while (!setStatus(ALT_RESET_ERR)) {}
-    UARTprintf("ALT_RESET write error\n\r");
+    if (consoleIsEnabled()) UARTprintf("ALT_RESET write error\n\r");
     return false;
   }
   delay(ALT_RESET_DELAY);

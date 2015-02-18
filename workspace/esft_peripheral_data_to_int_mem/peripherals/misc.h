@@ -30,6 +30,9 @@ extern "C"
 #define CYAN_LED    GREEN_LED | BLUE_LED
 #define WHITE_LED   RED_LED   | GREEN_LED | BLUE_LED
 
+#define CONSOLE_BASE UART0_BASE
+
+extern bool consoleIsEnabled(void);
 extern void consoleInit(void);
 extern void delay(uint32_t ui32ms);
 extern void FPUInit(void);

@@ -244,7 +244,7 @@ main(void) {
       //
       // Reset write buffer after data is written
       //
-      flashWriteBuffer[0] = '/0'; // Set first value to null to terminate string and ignore all other data
+      flashWriteBuffer[0] = '\0'; // Set first value to null to terminate string and ignore all other data
       flashWriteBufferSize = 0; // Reset the buffer size to 0
     }
   } // main while end

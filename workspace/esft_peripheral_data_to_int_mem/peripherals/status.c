@@ -67,7 +67,7 @@ statusCodeInterruptInit(void) {
   MAP_TimerEnable(TIMER0_BASE, TIMER_A);
 }
 void
-Timer0IntHandler(void) { // Timer interrupt to handle status codes
+statusIntHandler(void) { // Timer interrupt to handle status codes
   static uint8_t  statusColor;          // Status Code Color
   static uint32_t statusBlinkDelay[3];  // Status Code Delays
   static uint8_t  statusBeepIndex = 0;  // Index of beep LED
@@ -77,7 +77,7 @@ Timer0IntHandler(void) { // Timer interrupt to handle status codes
   //
   // Disable interrupts to prevent loops
   //
-  MAP_IntMasterDisable();
+  MAP_IntDisable(INT_TIMER0A);
 
   //
   // Clear the timer interrupt
@@ -177,22 +177,20 @@ Timer0IntHandler(void) { // Timer interrupt to handle status codes
   statusLEDOn = !statusLEDOn;
   if (statusLEDOn) {
     LEDOff(WHITE_LED); // Turn all LEDS off
-  } else {
-    if (statusBeepIndex < 3) {
-      LEDOn(statusColor);
-      statusDelayIndex++;
-      if (statusBlinkDelay[statusBeepIndex]) {
-          statusDelayIndex = 0;
-          statusBeepIndex++;
-      }
-    } else if (statusBeepIndex < 3+STATUS_DELIMTER) {
-      statusBeepIndex++;
-    } else {
-      statusBeepIndex = 0;
-      statusBusy = false;
-      statusCode = statusCodeDefault;
+  } else if (statusBeepIndex < 3) {
+    LEDOn(statusColor);
+    statusDelayIndex++;
+    if (statusBlinkDelay[statusBeepIndex]) {
+        statusDelayIndex = 0;
+        statusBeepIndex++;
     }
+  } else if (statusBeepIndex < 3+STATUS_DELIMTER) {
+    statusBeepIndex++;
+  } else {
+    statusBeepIndex = 0;
+    statusBusy = false;
+    statusCode = statusCodeDefault;
   }
 
-  MAP_IntMasterEnable();
+  MAP_IntEnable(INT_TIMER0A);
 } //Timer0IntHandler()

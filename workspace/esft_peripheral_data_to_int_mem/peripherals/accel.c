@@ -41,12 +41,16 @@ accelInit(void) {
   MAP_ADCIntEnable(ADC0_BASE, 0);
   MAP_ADCIntClear(ADC0_BASE, 0);
 }
-void
+bool
 accelReceive(float* fptrForce) {
-  uint32_t ui32ADCData;
+  uint32_t ui32ADCData, ui32SampleCount;
   MAP_ADCProcessorTrigger(ADC0_BASE, 0);
   while(!MAP_ADCIntStatus(ADC0_BASE, 0, false)) {} // wait for a2d conversion
   MAP_ADCIntClear(ADC0_BASE, 0);
-  MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
-  *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_ZERO_G_VOUT) / ACCEL_G_RESOLUTION;
+  ui32SampleCount = MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
+  if (ui32SampleCount > 0) {
+    *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_ZERO_G_VOUT) / ACCEL_G_RESOLUTION;
+    return true;
+  }
+  return false;
 }

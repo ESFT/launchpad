@@ -44,9 +44,10 @@ typedef enum STATUSCODE {
     ALT_ADC_CONV_ERR, ALT_ADC_R_WRITE_ERR, ALT_ADC_R_READ_ERR
   } StatusCode_t;
 
-bool setStatus(StatusCode_t scStatus);
-void setStatusDefault(StatusCode_t scDefStatus);
-void statusCodeInterruptInit(void);
+extern bool setStatus(StatusCode_t scStatus);
+extern void setStatusDefault(StatusCode_t scDefStatus);
+extern void statusCodeInterruptInit(void);
+extern void statusIntHandler(void);
 
 //*****************************************************************************
 //

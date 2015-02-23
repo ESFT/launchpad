@@ -53,17 +53,16 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 //*****************************************************************************
 // Accelerometer
 #define ACCEL_ENABLED
-#define ACCEL_BASE ADC0_BASE // TODO: Create functionality to specify ADC base and port
 
 // Altimeter
-#define ALT_ENABLED
+//#define ALT_ENABLED
 #define ALT_BASE    I2C0_BASE
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 #define ALT_SPEED   I2C_SPEED_400
 
 // Flash
 #define DEBUG_FLASH
-#define DEBUG_FLASH_DELAY 500
+#define DEBUG_FLASH_DELAY 500 // Output delay in ms
 
 // GPS
 // #define GPS_ENABLED
@@ -72,12 +71,10 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 #define GPS_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
 
 // Gyro
-// #define GYRO_ENABLED
+#define GYRO_ENABLED
 #define GYRO_BASE    I2C1_BASE
 #define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
 #define GYRO_SPEED   I2C_SPEED_400
-#define GYRO_NUM_SAMPLES 50    // Calibration Sample Count - As recommended in STMicro doc
-#define GYRO_SIGMA_MULTIPLE  3 // Calibration Sigma Multiple - As recommended
 
 // Status codes
 #define STATUS_CODES_ENABLED
@@ -120,6 +117,7 @@ main(void) {
   //
   // Accelerometer variables
   //
+  bool  accelReceived = false; // Accelerometer data has been received
   float accelData = 0; // Accelerometer data
 
   //
@@ -132,9 +130,7 @@ main(void) {
   //
   // Altimeter variables
   //
-  bool     altDataReceived = false;   // Altimeter data has been received
-  uint16_t altCalibration[8]; // calibration coefficients
-  uint8_t  altCRC;            // calculated CRC
+  bool     altDataReceived = false; // Altimeter data has been received
   float    altTemperature;    // compensated temperature value
   float    altPressure;       // compensated pressure value
   float    altAltitude;       // Calculated altitude
@@ -143,19 +139,13 @@ main(void) {
   // Enable the altimeter
   //
   altInit(ALT_BASE, ALT_ADDRESS, ALT_SPEED);
-
-  while (!altProm(ALT_BASE, ALT_ADDRESS, altCalibration)) {} // read coefficients
-  altCRC = altCRC4(altCalibration); // calculate the CRC.
-  while (altCRC != (altCalibration[7] & 0x000F)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
-    setStatus(ALT_CRC_ERR);
-  }
 #endif
 
 #ifdef GPS_ENABLED
   //
   // GPS Variables
   //
-  bool     gpsDataReceived = false;  // GPS data has been received
+  bool     gpsDataReceived = false; // GPS data has been received
   uint8_t  gpsSentence[128]; // GPS NMEA sentence
 
   //
@@ -169,16 +159,14 @@ main(void) {
   // Gyro Variables
   //
   bool gyroDataReceived = false; // Gyro data has been received
-  float gyroDPS[3];       // Gyro degrees per second, each axis
+  float gyroDPS[3]; // Gyro degrees per second, each axis
 
   // TODO: Setup timer to be able to accurately determine heading from DPS
   // float gyroHeading[3]; // heading[x], heading[y], heading [z]
 
   //
   // Enable the gyro
-  //
   gyroInit(GYRO_BASE, GYRO_ADDRESS, GYRO_SPEED);
-  gyroCalibrate(GYRO_BASE, GYRO_ADDRESS, GYRO_NUM_SAMPLES, GYRO_SIGMA_MULTIPLE);
 #endif
 
   //
@@ -190,7 +178,7 @@ main(void) {
   uint32_t flashHeader = FLASH_STORE_RECORD_HEADER; // Magic Header Byte to find record beginning
   uint32_t flashPackedChar; // 4 Byte return from storage. Theoretically holds 4 packed chars
   uint32_t flashRecordSize; // Size of the current flash record
-  uint8_t  flashWriteBuffer[256]; // Buffer of the data to write
+  uint8_t  flashWriteBuffer[256] = {0}; // Buffer of the data to write
   int32_t  flashWriteBufferSize = 0;  // Length of the record to write
 
   //
@@ -203,15 +191,16 @@ main(void) {
     //
     // Get data from accelerometer
     //
-    accelReceive(&accelData);
-    flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accelData);
+    accelReceived = accelReceive(&accelData);
+    if (accelReceived) // Accelerometer data was received
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accelData);
 #endif
 
 #ifdef ALT_ENABLED
     //
     // Get data from altimeter
     //
-    altDataReceived = altReceive(ALT_BASE, ALT_ADDRESS, ALT_ADC_4096, altCalibration, &altTemperature, &altPressure, &altAltitude);
+    altDataReceived = altReceive(ALT_ADC_4096, &altTemperature, &altPressure, &altAltitude);
     if (altDataReceived) // altimeter data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
 #endif
@@ -229,7 +218,7 @@ main(void) {
     //
     // Get data from gyro
     //
-    gyroDataReceived = gyroReceive(GYRO_BASE, GYRO_ADDRESS, &gyroDPS[0]);
+    gyroDataReceived = gyroReceive(&gyroDPS[0]);
     if (gyroDataReceived) // gps data was received
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, gyroDPS[0], gyroDPS[1], gyroDPS[2]);
 #endif
@@ -239,11 +228,6 @@ main(void) {
       flashWriteBuffer[flashWriteBufferSize] = '\r';   // Add a \r
       flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Terminate string with a null
 
-      //
-      // Write data to flash
-      //
-      FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
-
 #ifdef DEBUG_FLASH
       //
       // Send write buffer over UART for debugging
@@ -251,6 +235,17 @@ main(void) {
       if (consoleIsEnabled()) UARTprintf("%s", flashWriteBuffer);
       delay(DEBUG_FLASH_DELAY);
 #endif
+
+      //
+      // Write data to flash
+      //
+      FreeSpaceAvailable = flashstoreWriteRecord(&flashWriteBuffer[0], flashWriteBufferSize);
+
+      //
+      // Reset write buffer after data is written
+      //
+      flashWriteBuffer[0] = '/0'; // Set first value to null to terminate string and ignore all other data
+      flashWriteBufferSize = 0; // Reset the buffer size to 0
     }
   } // main while end
 

@@ -120,12 +120,12 @@ extern "C"
 // Module function prototypes.
 //
 //*****************************************************************************
-extern bool    altADCConversion(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8Cmd, uint32_t* ui32ptrData);
-extern uint8_t altCRC4(uint16_t ui16nProm[8]);
+extern bool    altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
+extern uint8_t altCRC4(void);
 extern void    altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed);
-extern bool    altProm(uint32_t ui32Base, uint8_t ui8AltAddr, uint16_t ui16nProm[8]);
-extern bool    altReceive(uint32_t ui32Base, uint8_t ui8AltAddr, uint8_t ui8OSR, uint16_t ui16Calibration[8], float* fptrTemp, float* fptrPressure, float* fptrAltitude);
-extern bool    altReset(uint32_t ui32Base, uint8_t ui8AltAddr);
+extern bool    altProm(void);
+extern bool    altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude);
+extern bool    altReset(void);
 
 //*****************************************************************************
 //

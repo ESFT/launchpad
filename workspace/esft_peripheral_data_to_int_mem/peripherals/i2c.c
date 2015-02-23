@@ -116,20 +116,20 @@ I2CInit(uint32_t ui32Base, bool bSpeed) {
   MAP_I2CMasterEnable(ui32Base);
 }
 bool
-I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData, uint32_t ui32Size) {
+I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t* ui8ptrReadData, uint32_t ui32Size) {
+  //
+  // Wait for the Master bus to be finished
+  //
+  while (MAP_I2CMasterBusBusy(ui32Base)) {};
+
   //
   // Use I2C single read if theres only 1 item to receive
   //
   if (ui32Size == 1)
-    return I2CRead(ui32Base, ui8SlaveAddr, &ui32ptrReadData[0]);
+    return I2CRead(ui32Base, ui8SlaveAddr, &ui8ptrReadData[0]);
 
   uint32_t ui32ByteCount;        // local variable used for byte counting/state determination
   uint32_t MasterOptionCommand; // used to assign the control commands
-
-  //
-  // Wait for the I2C Bus to finish
-  //
-  // while(MAP_I2CMasterBusBusy(ui32Base)) {}
 
   //
   // Tell the master module what address it will place on the bus when
@@ -169,7 +169,13 @@ I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData,
     //
     // Wait until master module is done reading.
     //
+    while(!MAP_I2CMasterBusy(ui32Base)) {}
     while(MAP_I2CMasterBusy(ui32Base)) {}
+
+    //
+    // Clear any interrupts that may have been generated
+    //
+    MAP_I2CMasterIntClear(ui32Base);
 
     //
     // Reenable Interrupts
@@ -185,7 +191,7 @@ I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData,
     //
     // Move byte from register
     //
-    ui32ptrReadData[ui32ByteCount] = MAP_I2CMasterDataGet(ui32Base);
+    ui8ptrReadData[ui32ByteCount] = (uint8_t) MAP_I2CMasterDataGet(ui32Base);
   }
 
   //
@@ -196,6 +202,11 @@ I2CBurstRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrReadData,
 bool
 I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], uint32_t ui32Size) {
   //
+  // Wait for the Master bus to be finished
+  //
+  while (MAP_I2CMasterBusBusy(ui32Base)) {};
+
+  //
   // Use I2C single write if theres only 1 item to send
   //
   if (ui32Size == 1)
@@ -205,20 +216,10 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
   uint32_t MasterOptionCommand; // used to assign the control commands
 
   //
-  // Wait for the I2C Bus to finish
-  //
-  // while(MAP_I2CMasterBusBusy(ui32Base)) {}
-
-  //
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
   //
   MAP_I2CMasterSlaveAddrSet(ui32Base, ui8SlaveAddr, I2C_MODE_WRITE);
-
-  //
-  // Wait until master module is done transferring.
-  //
-  while(MAP_I2CMasterBusy(ui32Base)) {}
 
   //
   // The first byte has to be sent with the START control word
@@ -259,7 +260,13 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
     //
     // Wait until master module is done transferring.
     //
+    while(!MAP_I2CMasterBusy(ui32Base)) {}
     while(MAP_I2CMasterBusy(ui32Base)) {}
+
+    //
+    // Clear any interrupts that may have been generated
+    //
+    MAP_I2CMasterIntClear(ui32Base);
 
     //
     // Reenable Interrupts
@@ -278,11 +285,11 @@ I2CBurstWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData[], ui
   return true;
 }
 bool
-I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
+I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t* ui8ptrData) {
   //
-  // Wait for the I2C Bus to finish
+  // Wait for the Master bus to be finished
   //
-  // while(MAP_I2CMasterBusBusy(ui32Base)) {}
+  while (MAP_I2CMasterBusBusy(ui32Base)) {};
 
   //
   // Tell the master module what address it will place on the bus when
@@ -303,7 +310,13 @@ I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
   //
   // Wait until master module is done receiving.
   //
+  while(!MAP_I2CMasterBusy(ui32Base)) {}
   while(MAP_I2CMasterBusy(ui32Base)) {}
+
+  //
+  // Clear any interrupts that may have been generated
+  //
+  MAP_I2CMasterIntClear(ui32Base);
 
   //
   // Reenable Interrupts
@@ -319,7 +332,7 @@ I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
   //
   // Get data
   //
-  *ui32ptrData = MAP_I2CMasterDataGet(ui32Base);
+  *ui8ptrData = (uint8_t) MAP_I2CMasterDataGet(ui32Base);
 
   //
   // return the data from the master.
@@ -329,10 +342,11 @@ I2CRead(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint32_t* ui32ptrData) {
 bool
 I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
   //
-  // Wait for the I2C Bus to finish
+  // Wait for the Master bus to be finished
   //
-  // while(MAP_I2CMasterBusBusy(ui32Base)) {}
+  while (MAP_I2CMasterBusBusy(ui32Base)) {};
 
+  //
   //
   // Tell the master module what address it will place on the bus when
   // writing to the slave.
@@ -357,7 +371,13 @@ I2CWrite(uint32_t ui32Base, uint8_t ui8SlaveAddr, uint8_t ui8SendData) {
   //
   // Wait until master module is done transferring.
   //
+  while(!MAP_I2CMasterBusy(ui32Base)) {}
   while(MAP_I2CMasterBusy(ui32Base)) {}
+
+  //
+  // Clear any interrupts that may have been generated
+  //
+  MAP_I2CMasterIntClear(ui32Base);
 
   //
   // Reenable Interrupts

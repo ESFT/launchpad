@@ -36,40 +36,48 @@ extern "C"
 // Gyro Delay
 //
 #define GYRO_STARTUP_DELAY 5
-#define GYRO_CONFIG_DELAY 100
+#define GYRO_CONFIG_DELAY  100
 
 // Gyro Sensitivites
 #define GYRO_250_SENS  ((float)0.00875)
 #define GYRO_500_SENS  ((float)0.0175)
 #define GYRO_2000_SENS ((float)0.07)
 
+// Calibration
+#define GYRO_NUM_SAMPLES     50 // Calibration Sample Count
+#define GYRO_SIGMA_MULTIPLE  3  // Calibration Sigma Multiple
+
+// Device ID
+#define GYRO_ID 0xD3
+
 // Register address map
-#define GYRO_WHO_AM_I      0x0F
-#define GYRO_CTRL_REG1     0x20
-#define GYRO_CTRL_REG2     0x21
-#define GYRO_CTRL_REG3     0x22
-#define GYRO_CTRL_REG4     0x23
-#define GYRO_CTRL_REG5     0x24
-#define GYRO_REFERENCE     0x25
-#define GYRO_OUT_TEMP      0x26
-#define GYRO_STATUS_REG    0x27
-#define GYRO_OUT_X_L       0x28
-#define GYRO_OUT_X_H       0x29
-#define GYRO_OUT_Y_L       0x2A
-#define GYRO_OUT_Y_H       0x2B
-#define GYRO_OUT_Z_L       0x2C
-#define GYRO_OUT_Z_H       0x2D
-#define GYRO_FIFO_CTRL_REG 0x2E
-#define GYRO_FIFO_SRC_REG  0x2F
-#define GYRO_INT1_CFG      0x30
-#define GYRO_INT1_SRC      0x31
-#define GYRO_INT1_TSH_XH   0x32
-#define GYRO_INT1_TSH_XL   0x33
-#define GYRO_INT1_TSH_YH   0x34
-#define GYRO_INT1_TSH_YL   0x35
-#define GYRO_INT1_TSH_ZH   0x36
-#define GYRO_INT1_TSH_ZL   0x37
-#define GYRO_INT1_DURATION 0x38
+#define GYRO_AUTO_INCREMENT 0x80
+#define GYRO_WHO_AM_I       0x0F
+#define GYRO_CTRL_REG1      0x20
+#define GYRO_CTRL_REG2      0x21
+#define GYRO_CTRL_REG3      0x22
+#define GYRO_CTRL_REG4      0x23
+#define GYRO_CTRL_REG5      0x24
+#define GYRO_REFERENCE      0x25
+#define GYRO_OUT_TEMP       0x26
+#define GYRO_STATUS_REG     0x27
+#define GYRO_OUT_X_L        0x28
+#define GYRO_OUT_X_H        0x29
+#define GYRO_OUT_Y_L        0x2A
+#define GYRO_OUT_Y_H        0x2B
+#define GYRO_OUT_Z_L        0x2C
+#define GYRO_OUT_Z_H        0x2D
+#define GYRO_FIFO_CTRL_REG  0x2E
+#define GYRO_FIFO_SRC_REG   0x2F
+#define GYRO_INT1_CFG       0x30
+#define GYRO_INT1_SRC       0x31
+#define GYRO_INT1_TSH_XH    0x32
+#define GYRO_INT1_TSH_XL    0x33
+#define GYRO_INT1_TSH_YH    0x34
+#define GYRO_INT1_TSH_YL    0x35
+#define GYRO_INT1_TSH_ZH    0x36
+#define GYRO_INT1_TSH_ZL    0x37
+#define GYRO_INT1_DURATION  0x38
 
 //Control Register 1
 #define GYRO_ODR100FC12P5 0x00<<4
@@ -146,7 +154,7 @@ extern "C"
 #define GYRO_ODR800HPFC0P01 0x09
 
   //Control Register 3
-#define GYRO_I1_Int1        0x01<<7
+#define GYRO_I1_INT1        0x01<<7
 #define GYRO_I1_BOOT        0x01<<6
 #define GYRO_H_LACTIVE      0x01<<5
 #define GYRO_PP_OD          0x01<<4
@@ -215,26 +223,137 @@ extern "C"
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed);
-extern bool gyroStartup();
-extern void gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple);
-extern bool gyroReceive(float* fDPS);
 
-extern bool gyroTest();
-extern bool gyroConfigReg1(uint32_t ui32odr);
-extern bool gyroPowerDown();
-extern bool gyroSleep();
-extern bool gyroConfigReg2(uint32_t ui32bhr, uint32_t ui32hpf);
-extern bool gyroConfigReg3(uint32_t ui32intr);
-extern bool gyroDataConfig(uint32_t ui32upd, uint32_t ui32end, uint32_t ui32res);
-extern bool gyroSelfTest(uint32_t ui32test);
+/*
+ * @brief: Configure boot mode
+ * @param[in]: GYRO_BOOT_NORMAL, GYRO_BOOT_MEM
+ */
 extern bool gyroBoot(uint32_t ui32boot);
+/*
+ * @brief: Calibrate L3G4200D
+ */
+extern void gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple);
+/*
+ * @brief: Configure HPF behavior and cutoff frequency
+ *        HPF behavior.
+ *          GYRO_RESET_FILTER
+ *          GYRO_REF_SIG_FILTER
+ *          GYRO_NORMAL_MODE
+ *          GYRO_AUTORESET
+ *
+ *        HPF Cut off Frequency GYRO_ODRxxxHPFCy
+ *         Refer Table 27 in the datasheet
+ *          x : 100, 200, 400,  800
+ *          y : 30, 15, 8, 4, 2, 1, 0P5, 0P2, 0P1, 0P05, 0P02, 0P01
+ *
+ * @param[out]: none
+ */
+extern bool gyroConfigHPF(uint32_t ui32bhr, uint32_t ui32hpf);
+/*
+ * @brief: Configure interrupts on L3G4200D
+ * @param[in]: Interrupts to enable. A combination of the following is possible
+ *        GYRO_I1_Int1
+ *        GYRO_I1_BOOT
+ *        GYRO_H_LACTIVE
+ *        GYRO_PP_OD
+ *        GYRO_I2_DRDY
+ *        GYRO_I2_WTM
+ *        GYRO_I2_ORUN
+ *        GYRO_I2_EMPTY
+ */
+extern bool gyroConfigInterrupts(uint32_t ui32intr);
+/*
+ * @brief: Configure data O/P method
+ * @param[in]: Data update:
+ *          GYRO_CONTINUOUS_UPDATE/GYRO_BATCH_UPDATE
+ *             Endian
+ *          GYRO_DPSx. x = 250, 500, 2000
+ */
+extern bool gyroDataConfig(uint32_t ui32upd, uint32_t ui32res);
+/*
+ * @brief: Configure FIFO behaviour
+ * @param[in]: GYRO_FIFO_DISABLE, GYRO_FIFO_ENABLE
+ */
 extern bool gyroFIFO(uint32_t ui32fifo);
+/*
+ * @brief: Enable HPF
+ * @param[in]: GYRO_HIGH_PASS_DISABLE, GYRO_HIGH_PASS_ENABLE
+ */
 extern bool gyroHPF(uint32_t ui32hpf);
+/*
+ * @brief: Initialize L3G4200D
+ */
+extern void gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed);
+/*
+ * @brief: Int1 selection configuration
+ * @param[in]: GYRO_NON_HPF_FILT_INT, GYRO_HPF_FILT_INT, GYRO_LPF_FILT_INT, GYRO_HPF_LPF_INT
+ */
 extern bool gyroINT1(uint32_t ui32int1);
+/*
+ * @brief: Handles gyro data ready interrupt
+ */
+extern void gyroIntHandler(void);
+/*
+ * @brief: Out selection configuration
+ * @param[in]: GYRO_DATA_NON_HPF, GYRO_DATA_LPF, GYRO_DATA_HPF_LPF
+ */
 extern bool gyroOutSel(uint32_t ui32out);
-extern bool gyroReadXYZRaw(int16_t *x, int16_t *y, int16_t *z);
+/*
+ * @brief: Power down L3G4200D
+ */
+extern bool gyroPowerDown(void);
+/*
+ * @brief: Configure data rate, bandwidth and enable axis measurement
+ *        Acceptable values:
+ *           GYRO_ODR100FC12P5
+ *           GYRO_ODR100FC25
+ *           GYRO_ODR200FC12P5
+ *           GYRO_ODR200FC25
+ *           GYRO_ODR200FC50
+ *           GYRO_ODR200FC70
+ *           GYRO_ODR400FC20
+ *           GYRO_ODR400FC25
+ *           GYRO_ODR400FC50
+ *           GYRO_ODR400FC110
+ *           GYRO_ODR800FC30
+ *           GYRO_ODR800FC35
+ *           GYRO_ODR800FC50
+ *           GYRO_ODR800FC110
+ */
+extern bool gyroPowerOn(uint32_t ui32odr);
+/*
+ * @brief: Read raw X,Y, Z  angular rates
+ * @param[in]: ptr to x, y and z data points
+ */
+extern bool gyroReadXYZRaw(int16_t* i16Raw);
+/*
+ * @brief: Read calibrated X,Y, Z  angular rates
+ * @param[in]: ptr to x, y and z data points
+ */
+extern bool gyroReceive(float* fDPS);
+/*
+ * @brief: Read temperature
+ * @param[in]: ptr to temperature data
+ */
 extern bool gyroReadTemp(int8_t *ui8Temp);
+/*
+ * @brief: Configure self test
+ * @param[in]: Self test
+ *        GYRO_DISABLE, GYRO_POSITIVE_SELF_TEST, GYRO_NEUTRAL_SELF_TEST, GYRO_NEGATIVE_SELF_TEST
+ */
+extern bool gyroSelfTest(uint32_t ui32test);
+/*
+ * @brief: Sleep L3G4200D
+ */
+extern bool gyroSleep(void);
+/*
+ * @brief: Get status
+ */
+extern bool gyroStatus(uint8_t* ui8Status);
+/*
+ * @brief: Test connection for L3G4200D
+ */
+extern bool gyroTest(void);
 
 //*****************************************************************************
 //

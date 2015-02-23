@@ -27,7 +27,7 @@ extern "C"
 //
 //*****************************************************************************
 extern void accelInit(void);
-extern void accelReceive(float* fptrForce);
+extern bool accelReceive(float* fptrForce);
 
 //*****************************************************************************
 //

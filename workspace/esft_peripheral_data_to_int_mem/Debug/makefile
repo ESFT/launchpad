@@ -13,6 +13,7 @@ $(GEN_CMDS__FLAG) \
 "./peripherals/accel.obj" \
 "./peripherals/altimeter.obj" \
 "./peripherals/flashstore.obj" \
+"./peripherals/gpio.obj" \
 "./peripherals/gps.obj" \
 "./peripherals/gyro.obj" \
 "./peripherals/i2c.obj" \
@@ -139,7 +140,7 @@ BIN_OUTPUTS__QUOTED += \
 all: esft_peripheral_data_to_int_mem.out
 
 dependents:
-	-cd D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) all
+	-cd D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
 
 # Tool invocations
 esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib
@@ -159,8 +160,8 @@ esft_peripheral_data_to_int_mem.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel.pp" "peripherals\altimeter.pp" "peripherals\flashstore.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" 
-	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel.obj" "peripherals\altimeter.obj" "peripherals\flashstore.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" 
+	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel.pp" "peripherals\altimeter.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" 
+	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel.obj" "peripherals\altimeter.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

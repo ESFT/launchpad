@@ -22,7 +22,7 @@
 #include "inc/hw_memmap.h"
 
 #include "peripherals/altimeter.h"
-#include "peripherals/accel.h"
+#include "peripherals/accel250.h"
 #include "peripherals/flashstore.h"
 #include "peripherals/gyro.h"
 #include "peripherals/i2c.h"
@@ -51,8 +51,8 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 // Peripheral defines
 //
 //*****************************************************************************
-// Accelerometer
-#define ACCEL_ENABLED
+// 250G Accelerometer
+#define ACCEL_250_ENABLED
 
 // Altimeter
 //#define ALT_ENABLED
@@ -113,17 +113,17 @@ main(void) {
   //
   consoleInit();
 
-#ifdef ACCEL_ENABLED
+#ifdef ACCEL_250_ENABLED
   //
   // Accelerometer variables
   //
-  bool  accelReceived = false; // Accelerometer data has been received
-  float accelData = 0; // Accelerometer data
+  bool  accel250Received = false; // Accelerometer data has been received
+  float accel250Data = 0; // Accelerometer data
 
   //
   // Enable the accelerometer
   //
-  accelInit();
+  accel250Init();
 #endif
 
 #ifdef ALT_ENABLED
@@ -187,13 +187,13 @@ main(void) {
 
   while(FreeSpaceAvailable) {
     setStatusDefault(RUNNING);
-#ifdef ACCEL_ENABLED
+#ifdef ACCEL_250_ENABLED
     //
     // Get data from accelerometer
     //
-    accelReceived = accelReceive(&accelData);
-    if (accelReceived) // Accelerometer data was received
-      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accelData);
+    accel250Received = accel250Receive(&accel250Data);
+    if (accel250Received) // 250G Accelerometer data was received
+      flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accel250Data);
 #endif
 
 #ifdef ALT_ENABLED

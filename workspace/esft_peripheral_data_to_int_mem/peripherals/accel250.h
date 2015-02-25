@@ -5,8 +5,8 @@
  *      Author: Ryan
  */
 
-#ifndef ACCEL_H_
-#define ACCEL_H_
+#ifndef __ACCEL_250_H__
+#define __ACCEL_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,17 +17,17 @@ extern "C"
 #endif
 
 // TODO: Get correct Zero G Vout. Current value is theory
-#define ACCEL_ZERO_G_VOUT 1.65
+#define ACCEL_250_ZERO_G_VOUT 1.65
 // TODO: Calculate correct G resolution. Current value is theory.
-#define ACCEL_G_RESOLUTION 0.0066
+#define ACCEL_250_G_RESOLUTION 0.0066
 
 //*****************************************************************************
 //
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void accelInit(void);
-extern bool accelReceive(float* fptrForce);
+extern void accel250Init(void);
+extern bool accel250Receive(float* fptrForce);
 
 //*****************************************************************************
 //
@@ -38,4 +38,4 @@ extern bool accelReceive(float* fptrForce);
 }
 #endif
 
-#endif /* ACCEL_H_ */
+#endif /* __ACCEL_H__ */

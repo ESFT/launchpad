@@ -12,10 +12,10 @@
 #include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
 #include "inc/hw_memmap.h"
-#include "accel.h"
+#include "accel250.h"
 
 void
-accelInit(void) {
+accel250Init(void) {
   //
   // Enable the peripherals used by the accelerometer
   //
@@ -42,14 +42,14 @@ accelInit(void) {
   MAP_ADCIntClear(ADC0_BASE, 0);
 }
 bool
-accelReceive(float* fptrForce) {
+accel250Receive(float* fptrForce) {
   uint32_t ui32ADCData, ui32SampleCount;
   MAP_ADCProcessorTrigger(ADC0_BASE, 0);
   while(!MAP_ADCIntStatus(ADC0_BASE, 0, false)) {} // wait for a2d conversion
   MAP_ADCIntClear(ADC0_BASE, 0);
   ui32SampleCount = MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
   if (ui32SampleCount > 0) {
-    *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_ZERO_G_VOUT) / ACCEL_G_RESOLUTION;
+    *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_250_ZERO_G_VOUT) / ACCEL_250_G_RESOLUTION;
     return true;
   }
   return false;

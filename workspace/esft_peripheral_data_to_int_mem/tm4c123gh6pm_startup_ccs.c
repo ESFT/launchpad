@@ -55,6 +55,8 @@ extern uint32_t __STACK_TOP;
 //
 //*****************************************************************************
 extern void statusIntHandler(void);
+extern void busFaultHandler(void);
+extern void usageFaultHandler(void);
 
 //*****************************************************************************
 //
@@ -72,8 +74,8 @@ void (* const g_pfnVectors[])(void) =
     NmiSR,                                  // The NMI handler
     FaultISR,                               // The hard fault handler
     IntDefaultHandler,                      // The MPU fault handler
-    IntDefaultHandler,                      // The bus fault handler
-    IntDefaultHandler,                      // The usage fault handler
+    busFaultHandler,                      // The bus fault handler
+    usageFaultHandler,                      // The usage fault handler
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved

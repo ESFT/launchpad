@@ -20,6 +20,7 @@
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
+#include "inc/hw_nvic.h"
 
 #include "peripherals/altimeter.h"
 #include "peripherals/accel250.h"
@@ -30,22 +31,6 @@
 #include "peripherals/status.h"
 #include "peripherals/uartstdio.h"
 
-#ifdef DEBUG
-//*****************************************************************************
-//
-// The error routine that is called if the driver library encounters an error.
-//
-//*****************************************************************************
-void
-__error__(char *pcFilename, uint32_t ui32Line) {
-  while(true) {
-    if (consoleIsEnabled()) UARTprintf("Error at line %d of %s\n\r", ui32Line, pcFilename);
-    setStatus(DRL_ERR);
-    delay(1000);
-  }
-}
-#endif
-
 //*****************************************************************************
 //
 // Peripheral defines
@@ -55,7 +40,7 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 #define ACCEL_250_ENABLED
 
 // Altimeter
-//#define ALT_ENABLED
+#define ALT_ENABLED
 #define ALT_BASE    I2C0_BASE
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 #define ALT_SPEED   I2C_SPEED_400
@@ -68,16 +53,27 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 // #define GPS_ENABLED
 #define GPS_BASE UART4_BASE
 #define GPS_BAUD 9600
-#define GPS_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
+#define GPS_UART_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
+#define GPS_NAV_SENSE_BASE GPIO_PORTC_BASE // Navigation lock sense base
+#define GPS_NAV_SENSE_PIN GPIO_PIN_6 // Navigation lock sense pin
 
 // Gyro
 #define GYRO_ENABLED
 #define GYRO_BASE    I2C1_BASE
 #define GYRO_ADDRESS GYRO_ADDRESS_SDO_LO
 #define GYRO_SPEED   I2C_SPEED_400
+#define GYRO_DRDY_SENSE_BASE SYSCTL_PERIPH_GPIOB
+#define GYRO_DRDY_SENSE_PIN GPIO_PIN_5
+
+// microSD
+#define mSD_CD_SENSE_BASE GPIO_PORTD_BASE // Card Detect sense base
+#define mSD_CD_SENSE_PIN GPIO_PIN_6 // Card Detect sense pin
 
 // Status codes
 #define STATUS_CODES_ENABLED
+
+// Prototypes
+void hardReset(void);
 
 //*****************************************************************************
 //
@@ -96,9 +92,10 @@ main(void) {
 
   MAP_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
+  StatusCode_t status;
 #ifdef STATUS_CODES_ENABLED
   //
-  // Enable timer interrupts
+  // Enable status codes
   //
   statusCodeInterruptInit();
 #endif
@@ -117,7 +114,6 @@ main(void) {
   //
   // Accelerometer variables
   //
-  bool  accel250Received = false; // Accelerometer data has been received
   float accel250Data = 0; // Accelerometer data
 
   //
@@ -130,15 +126,18 @@ main(void) {
   //
   // Altimeter variables
   //
-  bool     altDataReceived = false; // Altimeter data has been received
-  float    altTemperature;    // compensated temperature value
-  float    altPressure;       // compensated pressure value
-  float    altAltitude;       // Calculated altitude
+  float altTemperature; // compensated temperature value
+  float altPressure;    // compensated pressure value
+  float altAltitude;    // Calculated altitude
 
   //
   // Enable the altimeter
   //
-  altInit(ALT_BASE, ALT_ADDRESS, ALT_SPEED);
+  do {
+    status = altInit(ALT_BASE, ALT_ADDRESS, ALT_SPEED);
+    setStatus(status);
+  } while (status != INITIALIZING);
+
 #endif
 
 #ifdef GPS_ENABLED
@@ -151,7 +150,7 @@ main(void) {
   //
   // Enable the GPS
   //
-  gpsInit(GPS_BASE, GPS_BAUD, GPS_CONFIG);
+  gpsInit(GPS_BASE, GPS_BAUD, GPS_UART_CONFIG);
 #endif
 
 #ifdef GYRO_ENABLED
@@ -166,7 +165,10 @@ main(void) {
 
   //
   // Enable the gyro
-  gyroInit(GYRO_BASE, GYRO_ADDRESS, GYRO_SPEED);
+  do {
+    status = gyroInit(GYRO_BASE, GYRO_ADDRESS, GYRO_SPEED, GYRO_DRDY_SENSE_BASE, GYRO_DRDY_SENSE_PIN);
+    setStatus(status);
+  } while (status != INITIALIZING);
 #endif
 
   //
@@ -185,24 +187,30 @@ main(void) {
   ///////////////////Gather Data/////////////////////////////
   //
 
+  setStatusDefault(RUNNING);
   while(FreeSpaceAvailable) {
-    setStatusDefault(RUNNING);
 #ifdef ACCEL_250_ENABLED
     //
     // Get data from accelerometer
     //
-    accel250Received = accel250Receive(&accel250Data);
-    if (accel250Received) // 250G Accelerometer data was received
+    status = accel250Receive(&accel250Data);
+    if (status == RUNNING) { // Data receive was successful
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%f,", accel250Data);
+    } else {
+      setStatus(status);
+    }
 #endif
 
 #ifdef ALT_ENABLED
     //
     // Get data from altimeter
-    //
-    altDataReceived = altReceive(ALT_ADC_4096, &altTemperature, &altPressure, &altAltitude);
-    if (altDataReceived) // altimeter data was received
+    //l
+    status = altReceive(ALT_ADC_4096, &altTemperature, &altPressure, &altAltitude);
+    if (status == RUNNING) { // Data receive was successful
       flashWriteBufferSize = sprintf((char*) &flashWriteBuffer[0], "%s%f,%f,%f,", flashWriteBuffer, altTemperature, altPressure, altAltitude);
+    } else {
+      setStatus(status);
+    }
 #endif
 
 #ifdef GPS_ENABLED
@@ -271,4 +279,50 @@ main(void) {
       if (consoleIsEnabled()) UARTprintf("***********************************************************************\n\r");
     }
   }
+}
+
+//*****************************************************************************
+//
+// Fault handlers declared in tm4c123gh6pm_startup_ccs.c
+//
+//*****************************************************************************
+void busFaultHandler(void) {
+  uint32_t i=0;
+  while (i<5000) {
+    setStatusDefault(BUS_FAULT);
+    delay(1);
+    i++;
+  }
+  hardReset();
+}
+void usageFaultHandler(void) {
+  uint32_t i=0;
+  while (i<5000) {
+    setStatusDefault(USAGE_FAULT);
+    delay(1);
+    i++;
+  }
+  hardReset();
+}
+
+#ifdef DEBUG
+//*****************************************************************************
+//
+// The error routine that is called if the driver library encounters an error.
+//
+//*****************************************************************************
+void
+__error__(char *pcFilename, uint32_t ui32Line) {
+  while(true) {
+    if (consoleIsEnabled()) UARTprintf("Error at line %d of %s\n\r", ui32Line, pcFilename);
+    setStatus(DRL_ERR);
+    delay(1000);
+  }
+}
+#endif
+
+// Hard Reset
+void
+hardReset(void) {
+  HWREG(NVIC_APINT) = NVIC_APINT_VECTKEY | NVIC_APINT_SYSRESETREQ;
 }

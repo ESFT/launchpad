@@ -93,6 +93,13 @@ statusIntHandler(void) { // Timer interrupt to handle status codes
     switch (statusCode) {
       case INITIALIZING: { // device is initializing
         statusColor = WHITE_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
+        break;
+      }
+      case INITIALIZING_HOLD: { // device is initializing hold
+        statusColor = WHITE_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
@@ -105,6 +112,20 @@ statusIntHandler(void) { // Timer interrupt to handle status codes
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
+      case OUT_OF_FLASH_HOLD: { // Out of flash memory hold
+        statusColor = BLUE_LED;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
+        break;
+      }
+      case OUT_OF_FLASH: { // out of flash memory
+        statusColor = BLUE_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
+        break;
+      }
       case DRL_ERR: { // driver library encountered an error
         statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
@@ -112,59 +133,59 @@ statusIntHandler(void) { // Timer interrupt to handle status codes
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
-      case ALT_CRC_ERR: { // altimeter calibration error
+      case BUS_FAULT: { // Bus fault
         statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
-      case OUT_OF_FLASH: { // out of flash memory
-        statusColor = BLUE_LED;
-        statusBlinkDelay[0] = STATUS_DASH;
+      case USAGE_FAULT: { // Usage fault
+        statusColor = RED_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
-        statusBlinkDelay[2] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
-      case ALT_ADC_CONV_ERR: { // ALT_ADC_CONV error
-        statusColor = YELLOW_LED;
+      case ACC250_ADC_CONV_ERR: { // 250G Accelerometer ADC conversion error
+        statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
-      case ALT_ADC_R_WRITE_ERR: { // ALT_ADC_READ write error
-        statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = STATUS_DOT;
-        statusBlinkDelay[1] = STATUS_DOT;
-        statusBlinkDelay[2] = STATUS_DASH;
-        break;
-      }
-      case ALT_ADC_R_READ_ERR: { // ALT_ADC_READ read error
-          statusColor = YELLOW_LED;
-          statusBlinkDelay[0] = STATUS_DOT;
-          statusBlinkDelay[1] = STATUS_DASH;
-          statusBlinkDelay[2] = STATUS_DOT;
-        break;
-      }
-      case ALT_PROM_R_WRITE_ERR: { // ALT_PROM_READ write error
-        statusColor = YELLOW_LED;
+      case ALT_RESET_ERR: { // Altimeter failed to reset
+        statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
-      case ALT_PROM_R_READ_ERR: { // ALT_PROM_READ read error
-        statusColor = YELLOW_LED;
+      case ALT_PROM_ERR: { // Altimeter PROM read failed
+        statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
-      case ALT_RESET_ERR: { // ALT_RESET error
-        statusColor = YELLOW_LED;
+      case ALT_CRC_ERR: { // Altimeter CRC check failed
+        statusColor = RED_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
+        break;
+      }
+      case ALT_ADC_CONV_ERR: { // Altimeter data retrieve failed
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
+        break;
+      }
+      case GYRO_STARTUP_ERR: { // Gyro failed to initialize
+        statusColor = YELLOW_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }

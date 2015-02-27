@@ -11,7 +11,9 @@
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
+
 #include "inc/hw_memmap.h"
+
 #include "accel250.h"
 
 void
@@ -41,7 +43,7 @@ accel250Init(void) {
   MAP_ADCIntEnable(ADC0_BASE, 0);
   MAP_ADCIntClear(ADC0_BASE, 0);
 }
-bool
+StatusCode_t
 accel250Receive(float* fptrForce) {
   uint32_t ui32ADCData, ui32SampleCount;
   MAP_ADCProcessorTrigger(ADC0_BASE, 0);
@@ -50,7 +52,7 @@ accel250Receive(float* fptrForce) {
   ui32SampleCount = MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
   if (ui32SampleCount > 0) {
     *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_250_ZERO_G_VOUT) / ACCEL_250_G_RESOLUTION;
-    return true;
+    return RUNNING;
   }
-  return false;
+  return ACC250_ADC_CONV_ERR;
 }

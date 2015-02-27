@@ -11,15 +11,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "status.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 // TODO: Get correct Zero G Vout. Current value is theory
-#define ACCEL_250_ZERO_G_VOUT 1.65
+#define ACCEL_250_ZERO_G_VOUT ((float) 1.65)
 // TODO: Calculate correct G resolution. Current value is theory.
-#define ACCEL_250_G_RESOLUTION 0.0066
+#define ACCEL_250_G_RESOLUTION ((float) 0.0066)
 
 //*****************************************************************************
 //
@@ -27,7 +29,7 @@ extern "C"
 //
 //*****************************************************************************
 extern void accel250Init(void);
-extern bool accel250Receive(float* fptrForce);
+extern StatusCode_t accel250Receive(float* fptrForce);
 
 //*****************************************************************************
 //

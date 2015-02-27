@@ -13,19 +13,19 @@
 #include "altimeter.h"
 #include "i2c.h"
 #include "misc.h"
-#include "status.h"
 #include "uartstdio.h"
 
 uint32_t alt_ui32Base;
 uint8_t  alt_ui8AltAddr;
 uint16_t alt_ui16Prom[8];
 
+uint8_t __altCRC4(void);
+
 bool
 altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   uint8_t ret[3];
 
   if (!I2CWrite(alt_ui32Base, alt_ui8AltAddr, ALT_ADC_CONV+ui8Cmd)) {
-    setStatus(ALT_ADC_CONV_ERR);
     if (consoleIsEnabled()) UARTprintf("ALT_ADC_CONV write error\n\r");
     return false;
   }
@@ -41,7 +41,6 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   // Tell altimeter to send data to launchpad
   //
   if (!I2CWrite(alt_ui32Base, alt_ui8AltAddr, ALT_ADC_READ)) {
-    setStatus(ALT_ADC_R_WRITE_ERR);
     if (consoleIsEnabled()) UARTprintf("ALT_ADC_READ write error\n\r");
     return false;
   }
@@ -50,7 +49,6 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   // Start receiving data from altimeter
   //
   if (!I2CBurstRead(alt_ui32Base, alt_ui8AltAddr, &ret[0], 3)) {
-    setStatus(ALT_ADC_R_READ_ERR);
     if (consoleIsEnabled()) UARTprintf("ALT_ADC_READ read error\n\r");
     return false;
   }
@@ -59,7 +57,7 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   return true;
 }
 uint8_t
-altCRC4(void) {
+__altCRC4(void) {
   int32_t cnt; // simple counter
   uint16_t n_rem = 0x00; // crc reminder
   uint16_t crc_read = alt_ui16Prom[7]; // original value of the crc
@@ -89,7 +87,7 @@ altCRC4(void) {
   alt_ui16Prom[7]=crc_read; // restore the crc_read to its original place
   return (n_rem ^ 0x0);
 }
-void
+StatusCode_t
 altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed) {
   uint8_t altCRC;
   alt_ui32Base = ui32Base;
@@ -101,13 +99,15 @@ altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed) {
   I2CInit(alt_ui32Base, bSpeed);
 
   // Reset altimeter
-  while (!altReset()) {}
+  if (!altReset()) return ALT_RESET_ERR;
 
-  while (!altProm()) {} // read coefficients
-  altCRC = altCRC4(); // calculate the CRC.
-  while (altCRC != (alt_ui16Prom[7] & 0x000F)) { // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
-    setStatus(ALT_CRC_ERR);
-  }
+  if (!altProm()) return ALT_PROM_ERR; // read coefficients
+  altCRC = __altCRC4(); // calculate the CRC.
+
+  // If prom CRC (Last byte of coefficient 7) and calculated CRC do not match, something went wrong!
+  if (altCRC != (alt_ui16Prom[7] & 0x000F)) return ALT_CRC_ERR;
+
+  return INITIALIZING;
 }
 bool
 altProm(void) {
@@ -115,12 +115,10 @@ altProm(void) {
   uint8_t ret[2];
   for (i = 0; i < 8; i++) {
     if (!I2CWrite(alt_ui32Base, alt_ui8AltAddr, ALT_PROM_READ+(i*2))) {
-      setStatus(ALT_PROM_R_WRITE_ERR);
       if (consoleIsEnabled()) UARTprintf("ALT_PROM_READ write error\n\r");
       return false;
     }
     if (!I2CBurstRead(alt_ui32Base, alt_ui8AltAddr, &ret[0], 2)) {
-      while (!setStatus(ALT_PROM_R_READ_ERR)) {}
       if (consoleIsEnabled()) UARTprintf("ALT_PROM_READ read error\n\r");
       return false;
     }
@@ -128,7 +126,7 @@ altProm(void) {
   }
   return true;
 }
-bool
+StatusCode_t
 altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude)
 {
   // Digital pressure and temp
@@ -175,14 +173,13 @@ altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAlti
     // Calculate altitude (in feet)
     // TODO: Convert to meters
     *fptrAltitude = (1-pow((*fptrPressure/1013.25),.190284))*145366.45;
-    return true;
+    return RUNNING;
   }
-  return false;
+  return ALT_ADC_CONV_ERR;
 }
 bool
 altReset(void) {
   if (!I2CWrite(alt_ui32Base, alt_ui8AltAddr, ALT_RESET)) {
-    while (!setStatus(ALT_RESET_ERR)) {}
     if (consoleIsEnabled()) UARTprintf("ALT_RESET write error\n\r");
     return false;
   }

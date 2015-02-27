@@ -21,9 +21,9 @@ extern "C"
 {
 #endif
 
-extern void gpioInitInput(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
-extern void gpioInitOutput(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
-extern void gpioInitOutputOD(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
+extern void gpioInputInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
+extern void gpioOutputInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
+extern void gpioOutputODInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
 extern void gpioIntSet(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32IntType, void (*pfnIntHandler)(void));
 
 //*****************************************************************************

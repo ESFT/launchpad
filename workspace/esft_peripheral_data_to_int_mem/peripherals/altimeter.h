@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "status.h"
+
 //*****************************************************************************
 //
 // If building with a C++ compiler, make all of the definitions in this header
@@ -120,12 +122,11 @@ extern "C"
 // Module function prototypes.
 //
 //*****************************************************************************
-extern bool    altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
-extern uint8_t altCRC4(void);
-extern void    altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed);
-extern bool    altProm(void);
-extern bool    altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude);
-extern bool    altReset(void);
+extern bool         altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
+extern StatusCode_t altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed);
+extern bool         altProm(void);
+extern StatusCode_t altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude);
+extern bool         altReset(void);
 
 //*****************************************************************************
 //

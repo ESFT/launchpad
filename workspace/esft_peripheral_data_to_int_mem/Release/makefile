@@ -8,13 +8,23 @@ CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
-"./flashstore.obj" \
 "./main.obj" \
 "./tm4c123gh6pm_startup_ccs.obj" \
-"./uartstdio.obj" \
+"./peripherals/accel250.obj" \
+"./peripherals/altimeter.obj" \
+"./peripherals/flashstore.obj" \
+"./peripherals/gpio.obj" \
+"./peripherals/gps.obj" \
+"./peripherals/gyro.obj" \
+"./peripherals/i2c.obj" \
+"./peripherals/misc.obj" \
+"./peripherals/ssi.obj" \
+"./peripherals/status.obj" \
+"./peripherals/uart.obj" \
+"./peripherals/uartstdio.obj" \
 "../tm4c123gh6pm.cmd" \
 -l"libc.a" \
--l"D:/Utilities/Code/Source/git_repo/launchpad/workspace/esft_peripheral_data_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
+-l"D:/Code/git_repo/launchpad/workspace/esft_peripheral_data_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
 
 -include ../makefile.init
 
@@ -24,7 +34,9 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include peripherals/subdir_vars.mk
 -include subdir_rules.mk
+-include peripherals/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -128,13 +140,13 @@ BIN_OUTPUTS__QUOTED += \
 all: esft_peripheral_data_to_int_mem.out
 
 dependents:
-	-cd D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release && $(MAKE) clean all
+	-cd D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release && $(MAKE) clean all
 
 # Tool invocations
-esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib
+esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_peripheral_data_to_int_mem.map" --heap_size=0 --stack_size=512 -i"D:/Utilities/Code/Source/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_peripheral_data_to_int_mem_linkInfo.xml" --rom_model -o "esft_peripheral_data_to_int_mem.out" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_peripheral_data_to_int_mem.map" --heap_size=0 --stack_size=512 -i"D:/Code/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_peripheral_data_to_int_mem_linkInfo.xml" --rom_model -o "esft_peripheral_data_to_int_mem.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -147,14 +159,14 @@ esft_peripheral_data_to_int_mem.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "flashstore.pp" "main.pp" "tm4c123gh6pm_startup_ccs.pp" "uartstdio.pp" 
-	-$(RM) "flashstore.obj" "main.obj" "tm4c123gh6pm_startup_ccs.obj" "uartstdio.obj" 
+	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel250.pp" "peripherals\altimeter.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" 
+	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel250.obj" "peripherals\altimeter.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
-D:/Utilities/Code/Source/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib:
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib:
 
 -include ../makefile.targets
 

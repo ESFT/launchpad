@@ -72,7 +72,7 @@ statusIntHandler(void) { // Timer interrupt to handle status codes
   static uint32_t statusBlinkDelay[3];  // Status Code Delays
   static uint8_t  statusBeepIndex = 0;  // Index of beep LED
   static uint32_t statusDelayIndex = 0; // Index of beep length
-  static bool     statusLEDOn = false;  // Status of the LED
+  static bool     statusBeepOn = false; // Is "beep" still active
 
   //
   // Disable interrupts to prevent loops
@@ -195,15 +195,16 @@ statusIntHandler(void) { // Timer interrupt to handle status codes
   //
   // Configure LED
   //
-  statusLEDOn = !statusLEDOn;
-  if (statusLEDOn) {
-    LEDOff(WHITE_LED); // Turn all LEDS off
+  if (!statusBeepOn) {
+    LEDClear(); // Turn all LEDS off
+    statusBeepOn = true;
   } else if (statusBeepIndex < 3) {
     LEDOn(statusColor);
     statusDelayIndex++;
-    if (statusBlinkDelay[statusBeepIndex]) {
+    if (statusBlinkDelay[statusBeepIndex] == statusDelayIndex) {
         statusDelayIndex = 0;
         statusBeepIndex++;
+        statusBeepOn = false;
     }
   } else if (statusBeepIndex < 3+STATUS_DELIMTER) {
     statusBeepIndex++;

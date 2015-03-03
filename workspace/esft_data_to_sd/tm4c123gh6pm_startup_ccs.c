@@ -57,6 +57,7 @@ extern uint32_t __STACK_TOP;
 extern void statusIntHandler(void);
 extern void busFaultHandler(void);
 extern void usageFaultHandler(void);
+extern void sysTickHandler(void);
 
 //*****************************************************************************
 //
@@ -74,7 +75,7 @@ void (* const g_pfnVectors[])(void) =
     NmiSR,                                  // The NMI handler
     FaultISR,                               // The hard fault handler
     IntDefaultHandler,                      // The MPU fault handler
-    busFaultHandler,                      // The bus fault handler
+    busFaultHandler,                        // The bus fault handler
     usageFaultHandler,                      // The usage fault handler
     0,                                      // Reserved
     0,                                      // Reserved
@@ -84,7 +85,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // Debug monitor handler
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
-    IntDefaultHandler,                      // The SysTick handler
+    sysTickHandler,                         // The SysTick handler
     IntDefaultHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C

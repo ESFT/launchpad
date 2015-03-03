@@ -40,8 +40,8 @@ extern "C"
 // Status Codes
 typedef enum STATUSCODE {
     INITIALIZING, INITIALIZING_HOLD, // Initialization
-    RUNNING,                         // Running
-    OUT_OF_FLASH_HOLD, OUT_OF_FLASH, // Out of flash
+    RUNNING, // Running
+    MMC_MOUNT_ERR, MMC_OPEN_ERR, OUT_OF_FLASH, // Flash status
     DRL_ERR, BUS_FAULT, USAGE_FAULT, // Fault status
     ACC250_ADC_CONV_ERR, // 250G accelerometer status
     ALT_RESET_ERR, ALT_PROM_ERR, ALT_CRC_ERR, ALT_ADC_CONV_ERR, // Altimeter status
@@ -50,7 +50,7 @@ typedef enum STATUSCODE {
 
 extern bool setStatus(StatusCode_t scStatus);
 extern void setStatusDefault(StatusCode_t scDefStatus);
-extern void statusCodeInterruptInit(void);
+extern void statusCodeInterruptInit(uint32_t ui32Base);
 extern void statusIntHandler(void);
 
 //*****************************************************************************

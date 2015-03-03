@@ -30,12 +30,22 @@ extern "C"
 #define CYAN_LED    GREEN_LED | BLUE_LED
 #define WHITE_LED   RED_LED   | GREEN_LED | BLUE_LED
 
+// Console
 #define CONSOLE_BASE UART0_BASE
 
+// Buttons
+#define NUM_BUTTONS 2
+#define SW1_BUTTON  GPIO_PIN_4
+#define SW2_BUTTON  GPIO_PIN_0
+#define ALL_BUTTONS (SW1_BUTTON | SW2_BUTTON)
+
+extern void buttonsInit(void);
+extern uint32_t buttonsPressed(uint8_t ui8Buttons);
 extern bool consoleIsEnabled(void);
 extern void consoleInit(void);
 extern void delay(uint32_t ui32ms);
 extern void FPUInit(void);
+extern void LEDClear(void);
 extern void LEDInit(void);
 extern void LEDOn(uint8_t ui8Color);
 extern void LEDOff(uint8_t ui8Color);

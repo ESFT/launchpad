@@ -3,59 +3,59 @@
 ################################################################################
 
 # Each subdirectory must supply rules for building sources it contributes
-host/usbhaudio.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhaudio.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhaudio.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhaudio.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhaudio.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhaudio.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhhid.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhid.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhhid.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhid.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhid.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhid.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhhidkeyboard.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidkeyboard.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhhidkeyboard.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidkeyboard.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhidkeyboard.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhidkeyboard.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhhidmouse.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidmouse.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhhidmouse.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhidmouse.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhidmouse.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhidmouse.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhhub.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhub.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhhub.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhhub.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhub.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhhub.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhmsc.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhmsc.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhmsc.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhmsc.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhmsc.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhmsc.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhostenum.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhostenum.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhostenum.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhostenum.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhostenum.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhostenum.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
-host/usbhscsi.obj: C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhscsi.c $(GEN_OPTS) $(GEN_HDRS)
+host/usbhscsi.obj: D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/host/usbhscsi.c $(GEN_OPTS) $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: ARM Compiler'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhscsi.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --include_path="D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --include_path="D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573" -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off --gen_func_subsections=on --ual --preproc_with_compile --preproc_dependency="host/usbhscsi.pp" --obj_directory="host" $(GEN_OPTS__FLAG) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

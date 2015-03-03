@@ -147,7 +147,7 @@ LIB_OUTPUTS__QUOTED += \
 all: driverlib.lib
 
 # Tool invocations
-driverlib.lib: $(OBJS)
+driverlib.lib: $(OBJS) $(OBJ_SRCS) $(LIB_SRCS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Archiver'
 	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armar" r "driverlib.lib" $(ORDERED_OBJS)

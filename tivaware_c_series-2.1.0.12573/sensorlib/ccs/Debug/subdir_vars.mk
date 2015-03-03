@@ -4,27 +4,27 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8963.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8975.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bmp180.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bq27510g3.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/cm3218.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/comp_dcm.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/i2cm_drv.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/isl29023.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/kxti9.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/l3gd20h.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303d.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_accel.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_mag.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/magneto.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu6050.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu9150.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/quaternion.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/sht21.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp006.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp100.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/vector.c 
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8963.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8975.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bmp180.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bq27510g3.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/cm3218.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/comp_dcm.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/i2cm_drv.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/isl29023.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/kxti9.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/l3gd20h.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303d.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_accel.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_mag.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/magneto.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu6050.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu9150.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/quaternion.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/sht21.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp006.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp100.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/vector.c 
 
 OBJS += \
 ./ak8963.obj \
@@ -119,26 +119,26 @@ OBJS__QUOTED += \
 "vector.obj" 
 
 C_SRCS__QUOTED += \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8963.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8975.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bmp180.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bq27510g3.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/cm3218.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/comp_dcm.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/i2cm_drv.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/isl29023.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/kxti9.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/l3gd20h.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303d.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_accel.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_mag.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/magneto.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu6050.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu9150.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/quaternion.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/sht21.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp006.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp100.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/vector.c" 
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8963.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/ak8975.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bmp180.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/bq27510g3.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/cm3218.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/comp_dcm.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/i2cm_drv.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/isl29023.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/kxti9.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/l3gd20h.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303d.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_accel.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/lsm303dlhc_mag.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/magneto.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu6050.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/mpu9150.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/quaternion.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/sht21.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp006.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/tmp100.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/sensorlib/vector.c" 
 
 

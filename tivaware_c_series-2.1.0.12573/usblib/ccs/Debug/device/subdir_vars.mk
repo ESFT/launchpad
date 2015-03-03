@@ -4,20 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdaudio.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdbulk.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdc.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdesc.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcomp.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdconfig.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbddfu-rt.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdenum.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhandler.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhid.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidgamepad.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidkeyb.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidmouse.c \
-C:/Users/Ryan/Skydrive/Dropbox/ESFT\ Electrical\ Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdmsc.c 
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdaudio.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdbulk.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdc.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdesc.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcomp.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdconfig.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbddfu-rt.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdenum.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhandler.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhid.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidgamepad.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidkeyb.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidmouse.c \
+D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdmsc.c 
 
 OBJS += \
 ./device/usbdaudio.obj \
@@ -84,19 +84,19 @@ OBJS__QUOTED += \
 "device\usbdmsc.obj" 
 
 C_SRCS__QUOTED += \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdaudio.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdbulk.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdc.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdesc.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcomp.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdconfig.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbddfu-rt.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdenum.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhandler.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhid.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidgamepad.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidkeyb.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidmouse.c" \
-"C:/Users/Ryan/Skydrive/Dropbox/ESFT Electrical Team/code/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdmsc.c" 
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdaudio.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdbulk.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdc.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcdesc.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdcomp.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdconfig.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbddfu-rt.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdenum.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhandler.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhid.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidgamepad.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidkeyb.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdhidmouse.c" \
+"D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/usblib/device/usbdmsc.c" 
 
 

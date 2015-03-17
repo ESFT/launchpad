@@ -30,17 +30,6 @@
 
 //*****************************************************************************
 //
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-//*****************************************************************************
-//
 // Define the beginning and end of the flash storage area.  You must make sure
 // that this area is well clear of any space occupied by the application
 // binary, and that this space is not used for any other purpose.
@@ -82,6 +71,17 @@ extern "C"
 //*****************************************************************************
 #define FLASH_STORE_RECORD_HEADER 0x53554100
 #define FLASH_STORE_RECORD_HEADER_SIZE 0x04
+
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 //*****************************************************************************
 //

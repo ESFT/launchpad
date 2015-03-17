@@ -13,15 +13,20 @@
 
 #include "status.h"
 
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // TODO: Get correct Zero G Vout. Current value is theory
-#define ACCEL_250_ZERO_G_VOUT ((float) 1.65)
+#define ACCEL_250_ZERO_G_VOUT (1.65F)
 // TODO: Calculate correct G resolution. Current value is theory.
-#define ACCEL_250_G_RESOLUTION ((float) 0.0066)
+#define ACCEL_250_G_RESOLUTION (0.0066F)
 
 //*****************************************************************************
 //
@@ -29,7 +34,7 @@ extern "C"
 //
 //*****************************************************************************
 extern void accel250Init(void);
-extern StatusCode_t accel250Receive(float* fptrForce);
+extern bool accel250Receive(float* fptrForce);
 
 //*****************************************************************************
 //

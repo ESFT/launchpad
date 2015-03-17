@@ -8,17 +8,6 @@
 #ifndef I2C_H_
 #define I2C_H_
 
-//*****************************************************************************
-//
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -26,6 +15,16 @@ extern "C"
 #define I2C_MODE_READ  true
 #define I2C_SPEED_100  false
 #define I2C_SPEED_400  true
+
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //*****************************************************************************
 //

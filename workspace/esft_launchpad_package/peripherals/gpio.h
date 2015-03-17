@@ -24,7 +24,7 @@ extern "C"
 extern void gpioInputInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32PinType);
 extern void gpioOutputInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
 extern void gpioOutputODInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint32_t ui32PinType);
-extern void gpioIntSet(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32IntType, void (*pfnIntHandler)(void));
+extern uint32_t gpioIntInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32IntType);
 
 //*****************************************************************************
 //

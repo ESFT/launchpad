@@ -17,17 +17,6 @@
 
 #include "status.h"
 
-//*****************************************************************************
-//
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 //
 // Gyro Addresses
 //
@@ -219,6 +208,17 @@ extern "C"
 #define GYRO_WTM_STATUS     0x01<<7
 #define GYRO_OVERRUN_STATUS 0x01<<6
 #define GYRO_FIFO_EMPTY     0x01<<5
+
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 //*****************************************************************************
 //

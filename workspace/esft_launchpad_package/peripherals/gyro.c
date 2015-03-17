@@ -6,26 +6,34 @@
  */
 
 #include <math.h>
+
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
+
 #include "gpio.h"
 #include "gyro.h"
 #include "i2c.h"
 #include "misc.h"
 #include "status.h"
-#include "uartstdio.h"
 
-float gyro_fSensitivity = 0;
-float gyro_fZeroRate[3] = { 0, 0, 0 };
-float gyro_fThreshold[3] = { 0, 0, 0 };
-int16_t* gyro_i16Raw;
+static uint32_t gyro_ui32Base;
+static uint8_t gyro_ui8GyroAddr;
+static uint32_t gyro_ui32SenseBase;
+static uint8_t gyro_ui8SensePin;
+static uint32_t gyro_ui32IntFlags;
 
-uint32_t gyro_ui32Base;
-uint8_t gyro_ui8GyroAddr;
-uint32_t gyro_ui32SenseBase;
-uint8_t gyro_ui8SensePin;
+static float gyro_fSensitivity = 0;
+static float gyro_fZeroRate[3] = { 0, 0, 0 };
+static float gyro_fThreshold[3] = { 0, 0, 0 };
 
+void
+gyroInterrupt() {
+  MAP_GPIOIntClear(gyro_ui32SenseBase, gyro_ui32IntFlags);
+  if (MAP_GPIOPinRead(gyro_ui32SenseBase, gyro_ui8SensePin)) {
+
+  }
+}
 void
 gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple) {
   float fSums[3] = { 0, 0, 0 }, fSigma[3] = { 0, 0, 0 };
@@ -53,23 +61,22 @@ gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32Sense
   //
   // Enable the I2C module used by the gyro
   //
-  I2CInit(gyro_ui32Base, bSpeed);
-  gpioInputInit(gyro_ui32SenseBase, gyro_ui8SensePin, GPIO_STRENGTH_4MA, GPIO_PIN_TYPE_STD);
+  I2CInit(ui32Base, bSpeed);
+  gpioInputInit(ui32SenseBase, ui8SensePin, GPIO_PIN_TYPE_STD);
+  gyro_ui32IntFlags = gpioIntInit(ui32SenseBase, ui8SensePin, GPIO_RISING_EDGE);
 
   delay(GYRO_STARTUP_DELAY);
 
   // 1. Test if device is there
   if (!gyroDetect()) return GYRO_STARTUP_ERR;
-  // 2. Write CTRL_REG2 (HPF Behavior, Cutoff Freq)
-  if (!gyroConfigHPF(GYRO_NORMAL_MODE, 0x0)) return GYRO_STARTUP_ERR;
-  // 3. Write CTRL_REG3 (Interrupts)
+  // 2. Write CTRL_REG3 (Interrupts)
   if (!gyroConfigInterrupts(GYRO_I2_DRDY)) return GYRO_STARTUP_ERR;
-  // 4. Write CTRL_REG4 (Data Config, Self test, SPI)
+  // 3. Write CTRL_REG4 (Data Config, Self test, SPI)
   if (!gyroDataConfig(GYRO_BATCH_UPDATE, GYRO_DPS250)) return GYRO_STARTUP_ERR;
-  // 5. Write CTRL_REG5 (Boot Mode)
+  // 4. Write CTRL_REG5 (Boot Mode)
   if (!gyroBoot(GYRO_BOOT_NORMAL)) return GYRO_STARTUP_ERR;
-  // 6. Write CTRL_REG1 (Data rate, Bandwith)
-  if (!gyroPowerOn(GYRO_ODR400FC110)) return GYRO_STARTUP_ERR;
+  // 5. Write CTRL_REG1 (Data rate, Bandwith)
+  if (!gyroPowerOn(GYRO_ODR800FC110)) return GYRO_STARTUP_ERR;
 
   delay(GYRO_CONFIG_DELAY);
 
@@ -186,7 +193,7 @@ gyroReadXYZRaw(int16_t* i16Raw) {
   if (!I2CWrite(gyro_ui32Base, gyro_ui8GyroAddr, GYRO_OUT_X_L | GYRO_AUTO_INCREMENT)) return false;
   if (!I2CBurstRead(gyro_ui32Base, gyro_ui8GyroAddr, &ui8Data[0], 6)) return false;
   for (i = 0; i < 3; i++) {
-    i16Raw[i] = (((uint16_t) (ui8Data[(i * 2) + 1])) << 8) | ui8Data[(i * 2)];
+    i16Raw[i] = (((int16_t) (ui8Data[(i * 2) + 1])) << 8) | ui8Data[(i * 2)];
   }
   return true;
 }

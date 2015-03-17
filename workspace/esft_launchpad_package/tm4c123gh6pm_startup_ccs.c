@@ -58,6 +58,7 @@ extern void statusIntHandler(void);
 extern void busFaultHandler(void);
 extern void usageFaultHandler(void);
 extern void sysTickHandler(void);
+extern void gpsInterrupt();
 
 //*****************************************************************************
 //
@@ -146,7 +147,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // SSI2 Rx and Tx
     IntDefaultHandler,                      // SSI3 Rx and Tx
     IntDefaultHandler,                      // UART3 Rx and Tx
-    IntDefaultHandler,                      // UART4 Rx and Tx
+    gpsInterrupt,                           // UART4 Rx and Tx
     IntDefaultHandler,                      // UART5 Rx and Tx
     IntDefaultHandler,                      // UART6 Rx and Tx
     IntDefaultHandler,                      // UART7 Rx and Tx

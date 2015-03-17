@@ -41,9 +41,11 @@ buttonsInit(void) {
   ROM_GPIODirModeSet(GPIO_PORTF_BASE, ALL_BUTTONS, GPIO_DIR_MODE_IN);
   MAP_GPIOPadConfigSet(GPIO_PORTF_BASE, ALL_BUTTONS, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
 }
-uint32_t
+bool
 buttonsPressed(uint8_t ui8Buttons) {
-  return ~MAP_GPIOPinRead(GPIO_PORTF_BASE, ui8Buttons);
+  if (~MAP_GPIOPinRead(GPIO_PORTF_BASE, ui8Buttons) & ui8Buttons)
+    return true;
+  return false;
 }
 bool
 consoleIsEnabled(void) {

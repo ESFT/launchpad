@@ -12,6 +12,7 @@ $(GEN_CMDS__FLAG) \
 "./tm4c123gh6pm_startup_ccs.obj" \
 "./peripherals/accel250.obj" \
 "./peripherals/altimeter.obj" \
+"./peripherals/compass.obj" \
 "./peripherals/flashstore.obj" \
 "./peripherals/gpio.obj" \
 "./peripherals/gps.obj" \
@@ -20,11 +21,31 @@ $(GEN_CMDS__FLAG) \
 "./peripherals/misc.obj" \
 "./peripherals/ssi.obj" \
 "./peripherals/status.obj" \
+"./peripherals/transceiver.obj" \
 "./peripherals/uart.obj" \
 "./peripherals/uartstdio.obj" \
+"./peripherals/nmealib/src/context.obj" \
+"./peripherals/nmealib/src/generate.obj" \
+"./peripherals/nmealib/src/generator.obj" \
+"./peripherals/nmealib/src/gmath.obj" \
+"./peripherals/nmealib/src/info.obj" \
+"./peripherals/nmealib/src/parse.obj" \
+"./peripherals/nmealib/src/parser.obj" \
+"./peripherals/nmealib/src/sentence.obj" \
+"./peripherals/nmealib/src/time.obj" \
+"./peripherals/nmealib/src/tok.obj" \
+"./peripherals/nmealib/samples/parse_file/main.obj" \
+"./peripherals/nmealib/samples/parse/main.obj" \
+"./peripherals/nmealib/samples/math/main.obj" \
+"./peripherals/nmealib/samples/generator/main.obj" \
+"./peripherals/nmealib/samples/generate/main.obj" \
+"./peripherals/fatfs/option/syscall.obj" \
+"./peripherals/fatfs/option/unicode.obj" \
+"./peripherals/fatfs/ff.obj" \
+"./peripherals/fatfs/mmc-dk-tm4c123g.obj" \
 "../tm4c123gh6pm.cmd" \
 -l"libc.a" \
--l"D:/Code/git_repo/launchpad/workspace/esft_data_to_sd/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
+-l"D:/Code/git_repo/launchpad/workspace/esft_launchpad_package//../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Release\driverlib.lib" \
 
 -include ../makefile.init
 
@@ -35,8 +56,24 @@ RMDIR := RMDIR /S/Q
 -include sources.mk
 -include subdir_vars.mk
 -include peripherals/subdir_vars.mk
+-include peripherals/nmealib/src/subdir_vars.mk
+-include peripherals/nmealib/samples/parse_file/subdir_vars.mk
+-include peripherals/nmealib/samples/parse/subdir_vars.mk
+-include peripherals/nmealib/samples/math/subdir_vars.mk
+-include peripherals/nmealib/samples/generator/subdir_vars.mk
+-include peripherals/nmealib/samples/generate/subdir_vars.mk
+-include peripherals/fatfs/option/subdir_vars.mk
+-include peripherals/fatfs/subdir_vars.mk
 -include subdir_rules.mk
 -include peripherals/subdir_rules.mk
+-include peripherals/nmealib/src/subdir_rules.mk
+-include peripherals/nmealib/samples/parse_file/subdir_rules.mk
+-include peripherals/nmealib/samples/parse/subdir_rules.mk
+-include peripherals/nmealib/samples/math/subdir_rules.mk
+-include peripherals/nmealib/samples/generator/subdir_rules.mk
+-include peripherals/nmealib/samples/generate/subdir_rules.mk
+-include peripherals/fatfs/option/subdir_rules.mk
+-include peripherals/fatfs/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -124,43 +161,45 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-esft_data_to_sd.out \
+esft_launchpad_package.out \
 
 EXE_OUTPUTS__QUOTED += \
-"esft_data_to_sd.out" \
+"esft_launchpad_package.out" \
 
 BIN_OUTPUTS += \
-esft_data_to_sd.hex \
+esft_launchpad_package.hex \
 
 BIN_OUTPUTS__QUOTED += \
-"esft_data_to_sd.hex" \
+"esft_launchpad_package.hex" \
 
 
 # All Target
-all: esft_data_to_sd.out
+all: esft_launchpad_package.out
 
 dependents:
 	-cd D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release && $(MAKE) clean all
 
 # Tool invocations
-esft_data_to_sd.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib
+esft_launchpad_package.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Release/driverlib.lib
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_data_to_sd.map" --heap_size=0 --stack_size=512 -i"D:/Code/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_data_to_sd_linkInfo.xml" --rom_model -o "esft_data_to_sd.out" $(ORDERED_OBJS)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --gcc --define=ccs="ccs" --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_launchpad_package.map" --heap_size=0 --stack_size=512 -i"D:/Code/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_launchpad_package_linkInfo.xml" --rom_model -o "esft_launchpad_package.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-esft_data_to_sd.hex: $(EXE_OUTPUTS)
+esft_launchpad_package.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armhex"  -o "esft_data_to_sd.hex" $(EXE_OUTPUTS__QUOTED)
+	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armhex"  -o "esft_launchpad_package.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel250.pp" "peripherals\altimeter.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" 
-	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel250.obj" "peripherals\altimeter.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" 
+	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel250.pp" "peripherals\altimeter.pp" "peripherals\compass.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\transceiver.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" "peripherals\nmealib\src\context.pp" "peripherals\nmealib\src\generate.pp" "peripherals\nmealib\src\generator.pp" "peripherals\nmealib\src\gmath.pp" "peripherals\nmealib\src\info.pp" "peripherals\nmealib\src\parse.pp" "peripherals\nmealib\src\parser.pp" "peripherals\nmealib\src\sentence.pp" "peripherals\nmealib\src\time.pp" "peripherals\nmealib\src\tok.pp" "peripherals\nmealib\samples\parse_file\main.pp" "peripherals\nmealib\samples\parse\main.pp" "peripherals\nmealib\samples\math\main.pp" "peripherals\nmealib\samples\generator\main.pp" "peripherals\nmealib\samples\generate\main.pp" "peripherals\fatfs\option\syscall.pp" 
+	-$(RM) "peripherals\fatfs\option\unicode.pp" "peripherals\fatfs\ff.pp" "peripherals\fatfs\mmc-dk-tm4c123g.pp" 
+	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel250.obj" "peripherals\altimeter.obj" "peripherals\compass.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\transceiver.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" "peripherals\nmealib\src\context.obj" "peripherals\nmealib\src\generate.obj" "peripherals\nmealib\src\generator.obj" "peripherals\nmealib\src\gmath.obj" "peripherals\nmealib\src\info.obj" "peripherals\nmealib\src\parse.obj" "peripherals\nmealib\src\parser.obj" "peripherals\nmealib\src\sentence.obj" "peripherals\nmealib\src\time.obj" "peripherals\nmealib\src\tok.obj" "peripherals\nmealib\samples\parse_file\main.obj" "peripherals\nmealib\samples\parse\main.obj" "peripherals\nmealib\samples\math\main.obj" "peripherals\nmealib\samples\generator\main.obj" "peripherals\nmealib\samples\generate\main.obj" "peripherals\fatfs\option\syscall.obj" 
+	-$(RM) "peripherals\fatfs\option\unicode.obj" "peripherals\fatfs\ff.obj" "peripherals\fatfs\mmc-dk-tm4c123g.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

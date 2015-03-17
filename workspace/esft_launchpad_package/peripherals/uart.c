@@ -6,6 +6,7 @@
  */
 
 #include "driverlib/gpio.h"
+#include "driverlib/interrupt.h"
 #include "driverlib/uart.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
@@ -13,15 +14,16 @@
 #include "driverlib/sysctl.h"
 
 #include "inc/hw_gpio.h"
-#include "inc/hw_uart.h"
+#include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
+#include "inc/hw_uart.h"
 
 #include "uart.h"
 
 void
 UARTInit(uint32_t ui32Base) {
-  switch(ui32Base) {
+  switch (ui32Base) {
     case UART0_BASE: {
       //
       // Enable Peripheral Clocks
@@ -216,4 +218,42 @@ UARTInit(uint32_t ui32Base) {
       break;
     }
   }
+}
+void
+UARTIntInit(uint32_t ui32Base, uint32_t ui32IntFlags) {
+  switch (ui32Base) {
+    case UART0_BASE: {
+      MAP_IntEnable(INT_UART0);
+      break;
+    }
+    case UART1_BASE: {
+      MAP_IntEnable(INT_UART1);
+      break;
+    }
+    case UART2_BASE: {
+      MAP_IntEnable(INT_UART2);
+      break;
+    }
+    case UART3_BASE: {
+      MAP_IntEnable(INT_UART3);
+      break;
+    }
+    case UART4_BASE: {
+      MAP_IntEnable(INT_UART4);
+      break;
+    }
+    case UART5_BASE: {
+      MAP_IntEnable(INT_UART5);
+      break;
+    }
+    case UART6_BASE: {
+      MAP_IntEnable(INT_UART6);
+      break;
+    }
+    case UART7_BASE: {
+      MAP_IntEnable(INT_UART7);
+      break;
+    }
+  }
+  MAP_UARTIntEnable(ui32Base, ui32IntFlags);
 }

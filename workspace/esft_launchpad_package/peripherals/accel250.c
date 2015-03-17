@@ -15,6 +15,7 @@
 #include "inc/hw_memmap.h"
 
 #include "accel250.h"
+#include "sensor_constants.h"
 
 void
 accel250Init(void) {
@@ -43,7 +44,7 @@ accel250Init(void) {
   MAP_ADCIntEnable(ADC0_BASE, 0);
   MAP_ADCIntClear(ADC0_BASE, 0);
 }
-StatusCode_t
+bool
 accel250Receive(float* fptrForce) {
   uint32_t ui32ADCData, ui32SampleCount;
   MAP_ADCProcessorTrigger(ADC0_BASE, 0);
@@ -51,8 +52,8 @@ accel250Receive(float* fptrForce) {
   MAP_ADCIntClear(ADC0_BASE, 0);
   ui32SampleCount = MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
   if (ui32SampleCount > 0) {
-    *fptrForce = ((float)ui32ADCData * 3.3 / 4095 - ACCEL_250_ZERO_G_VOUT) / ACCEL_250_G_RESOLUTION;
-    return RUNNING;
+    *fptrForce = (((float)ui32ADCData * 3.3 / 4095 - ACCEL_250_ZERO_G_VOUT) / ACCEL_250_G_RESOLUTION) * SENSORS_GRAVITY_STANDARD;
+    return true;
   }
-  return ACC250_ADC_CONV_ERR;
+  return false;
 }

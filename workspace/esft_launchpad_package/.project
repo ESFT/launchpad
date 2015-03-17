@@ -27,8 +27,12 @@
 	</natures>
 	<variableList>
 		<variable>
+			<name>ORIGINAL_PROJECT_ROOT</name>
+			<value>file:/D:/Code/git_repo/launchpad/workspace/esft_launchpad_package/</value>
+		</variable>
+		<variable>
 			<name>SW_ROOT</name>
-			<value>$%7BPARENT-2-PROJECT_LOC%7D/TivaWare_C_Series-2.1.0.12573</value>
+			<value>$%7BPARENT-2-ORIGINAL_PROJECT_ROOT%7D%5CTivaWare_C_Series-2.1.0.12573</value>
 		</variable>
 	</variableList>
 </projectDescription>

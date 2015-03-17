@@ -17,17 +17,6 @@
 
 #include "status.h"
 
-//*****************************************************************************
-//
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 //
 // Commands
 //
@@ -119,13 +108,29 @@ extern "C"
 
 //*****************************************************************************
 //
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+    float temperature;  // compensated temperature value in celsius (See "SENSORS_TEMP_CONVERSION_STANDARD" in sensor_constants.h)
+    float pressure;     // compensated pressure value in pascals (See "SENSORS_MBAR_CONVERSION_STANDARD" in sensor_constants.h)
+    float altitude;     // Calculated altitude in meters (See "SENSORS_MBAR_CONVERSION_STANDARD" in sensor_constants.h)
+} AltData_t;
+
+//*****************************************************************************
+//
 // Module function prototypes.
 //
 //*****************************************************************************
 extern bool         altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
 extern StatusCode_t altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed);
 extern bool         altProm(void);
-extern StatusCode_t altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude);
+extern bool         altReceive(uint8_t ui8OSR, AltData_t* altData);
 extern bool         altReset(void);
 
 //*****************************************************************************

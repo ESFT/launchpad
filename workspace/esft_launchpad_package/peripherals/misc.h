@@ -8,18 +8,8 @@
 #ifndef MISC_H_
 #define MISC_H_
 
+#include <stdbool.h>
 #include <stdint.h>
-
-//*****************************************************************************
-//
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 // LED Colors
 #define RED_LED     GPIO_PIN_1
@@ -39,8 +29,18 @@ extern "C"
 #define SW2_BUTTON  GPIO_PIN_0
 #define ALL_BUTTONS (SW1_BUTTON | SW2_BUTTON)
 
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void buttonsInit(void);
-extern uint32_t buttonsPressed(uint8_t ui8Buttons);
+extern bool buttonsPressed(uint8_t ui8Buttons);
 extern bool consoleIsEnabled(void);
 extern void consoleInit(void);
 extern void delay(uint32_t ui32ms);

@@ -9,7 +9,10 @@
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
+#include "driverlib/sysctl.h"
+
 #include "inc/hw_gpio.h"
+#include "inc/hw_memmap.h"
 
 #include "gpio.h"
 
@@ -59,4 +62,35 @@ gpioOutputODInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32Strength, uint
   gpioSysCtlInit(ui32Port);
   MAP_GPIOPinTypeGPIOOutputOD(ui32Port, ui8Pins);
   MAP_GPIOPadConfigSet(ui32Port, ui8Pins, ui32Strength, ui32PinType);
+}
+uint32_t
+gpioIntInit(uint32_t ui32Port, uint8_t ui8Pins, uint32_t ui32IntType) {
+  uint32_t ui32IntFlags = 0;
+  MAP_GPIOIntTypeSet(ui32Port, ui8Pins, ui32IntType);
+  if (ui8Pins & GPIO_PIN_0) {
+    ui32IntFlags |= GPIO_INT_PIN_0;
+  }
+  if (ui8Pins & GPIO_PIN_1) {
+    ui32IntFlags |= GPIO_INT_PIN_1;
+  }
+  if (ui8Pins & GPIO_PIN_2) {
+    ui32IntFlags |= GPIO_INT_PIN_2;
+  }
+  if (ui8Pins & GPIO_PIN_3) {
+    ui32IntFlags |= GPIO_INT_PIN_3;
+  }
+  if (ui8Pins & GPIO_PIN_4) {
+    ui32IntFlags |= GPIO_INT_PIN_4;
+  }
+  if (ui8Pins & GPIO_PIN_5) {
+    ui32IntFlags |= GPIO_INT_PIN_5;
+  }
+  if (ui8Pins & GPIO_PIN_6) {
+    ui32IntFlags |= GPIO_INT_PIN_6;
+  }
+  if (ui8Pins & GPIO_PIN_7) {
+    ui32IntFlags |= GPIO_INT_PIN_7;
+  }
+  MAP_GPIOIntEnable(ui32Port, ui32IntFlags);
+  return ui32IntFlags;
 }

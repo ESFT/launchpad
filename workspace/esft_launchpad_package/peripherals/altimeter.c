@@ -12,15 +12,45 @@
 
 #include "altimeter.h"
 #include "i2c.h"
+#include "sensor_constants.h"
 #include "misc.h"
 #include "uartstdio.h"
 
-uint32_t alt_ui32Base;
-uint8_t  alt_ui8AltAddr;
-uint16_t alt_ui16Prom[8];
+static uint32_t alt_ui32Base;
+static uint8_t  alt_ui8AltAddr;
+static uint16_t alt_ui16Prom[8];
 
-uint8_t __altCRC4(void);
-
+uint8_t
+__altCRC4(void) {
+  int32_t cnt; // simple counter
+  uint16_t n_rem = 0x00; // crc reminder
+  uint16_t crc_read = alt_ui16Prom[7]; // original value of the crc
+  uint8_t n_bit;
+  alt_ui16Prom[7]=(0xFF00 & (alt_ui16Prom[7])); //CRC byte is replaced by 0
+  for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
+  { // choose LSB or MSB
+    if (cnt%2==1) {
+      n_rem ^= (alt_ui16Prom[cnt>>1]) & 0x00FF;
+    }
+    else {
+      n_rem ^= alt_ui16Prom[cnt>>1]>>8;
+    }
+    for (n_bit = 8; n_bit > 0; n_bit--)
+    {
+      if (n_rem & (0x8000))
+      {
+        n_rem = (n_rem << 1) ^ 0x3000;
+      }
+      else
+      {
+        n_rem = (n_rem << 1);
+      }
+    }
+  }
+  n_rem= (0x000F & (n_rem >> 12)); // final 4-bit reminder is CRC code
+  alt_ui16Prom[7]=crc_read; // restore the crc_read to its original place
+  return (n_rem ^ 0x0);
+}
 bool
 altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   uint8_t ret[3];
@@ -55,37 +85,6 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
 
   *ui32ptrData = (65536*ret[0]) + (256 * ret[1]) + ret[2];
   return true;
-}
-uint8_t
-__altCRC4(void) {
-  int32_t cnt; // simple counter
-  uint16_t n_rem = 0x00; // crc reminder
-  uint16_t crc_read = alt_ui16Prom[7]; // original value of the crc
-  uint8_t n_bit;
-  alt_ui16Prom[7]=(0xFF00 & (alt_ui16Prom[7])); //CRC byte is replaced by 0
-  for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
-  { // choose LSB or MSB
-    if (cnt%2==1) {
-      n_rem ^= (alt_ui16Prom[cnt>>1]) & 0x00FF;
-    }
-    else {
-      n_rem ^= alt_ui16Prom[cnt>>1]>>8;
-    }
-    for (n_bit = 8; n_bit > 0; n_bit--)
-    {
-      if (n_rem & (0x8000))
-      {
-        n_rem = (n_rem << 1) ^ 0x3000;
-      }
-      else
-      {
-        n_rem = (n_rem << 1);
-      }
-    }
-  }
-  n_rem= (0x000F & (n_rem >> 12)); // final 4-bit reminder is CRC code
-  alt_ui16Prom[7]=crc_read; // restore the crc_read to its original place
-  return (n_rem ^ 0x0);
 }
 StatusCode_t
 altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed) {
@@ -126,12 +125,11 @@ altProm(void) {
   }
   return true;
 }
-StatusCode_t
-altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAltitude)
-{
+bool
+altReceive(uint8_t ui8OSR, AltData_t* altData) {
   // Digital pressure and temp
-  uint32_t D1 = 0;   // ADC value of the pressure conversion
-  uint32_t D2 = 0;   // ADC value of the temperature conversion
+  uint32_t adcPressure = 0;   // ADC value of the pressure conversion
+  uint32_t adcTemperature = 0;   // ADC value of the temperature conversion
 
   // Temp difference, offsets, and sensitivities
   int32_t  dT    = 0; // difference between actual and measured temperature
@@ -141,41 +139,44 @@ altReceive(uint8_t ui8OSR, float* fptrTemp, float* fptrPressure, float* fptrAlti
   int64_t  SENS  = 0; // sensitivity at actual temperature
   int64_t  SENS2 = 0; // second order sensitivity at actual temperature
 
-  if (altADCConversion(ALT_ADC_D1+ui8OSR, &D1) && altADCConversion(ALT_ADC_D2+ui8OSR, &D2)) {
-    // Calculate 1st order pressure and temperature
-
+  if (altADCConversion(ALT_ADC_D1+ui8OSR, &adcPressure) && altADCConversion(ALT_ADC_D2+ui8OSR, &adcTemperature)) {
     // Calculate 1st order temp difference, offset, and sensitivity (MS5607 1st order algorithm)
-    dT=D2-alt_ui16Prom[5]*pow(2,8);
+    dT=adcTemperature-alt_ui16Prom[5]*pow(2,8);
     OFF=alt_ui16Prom[2]*pow(2,17)+dT*alt_ui16Prom[4]/pow(2,6);
     SENS=alt_ui16Prom[1]*pow(2,16)+dT*alt_ui16Prom[3]/pow(2,7);
 
-    // Calculate temperature
-    *fptrTemp=(2000+(dT*alt_ui16Prom[6])/pow(2,23))/100;
+    // Calculate 1st order temperature (celsius)
+    altData->temperature=(2000+(dT*alt_ui16Prom[6])/pow(2,23))/100;
 
     // Calculate 2nd order temp difference, offset, and sensitivity (MS5607 2nd order algorithm)
-    if (*fptrTemp < 20) {
+    if (altData->temperature < 20) {
       T2 = pow(dT, 2)/pow(2,31);
-      OFF2 = 61*pow((*fptrTemp-2000),2)/pow(2,4);
-      SENS2 = 2*pow((*fptrTemp-2000),2);
-      if (*fptrTemp < -15)
-      {
-        OFF2 = OFF2+15*pow((*fptrTemp+1500),2);
-        SENS2 = SENS2+8*pow((*fptrTemp+1500),2);
+      OFF2 = 61*pow((altData->temperature-2000),2)/pow(2,4);
+      SENS2 = 2*pow((altData->temperature-2000),2);
+      if (altData->temperature < -15) {
+        OFF2 = OFF2+15*pow((altData->temperature+1500),2);
+        SENS2 = SENS2+8*pow((altData->temperature+1500),2);
       }
     }
-    *fptrTemp = *fptrTemp - T2;
     OFF = OFF - OFF2;
     SENS = SENS - SENS2;
 
-    // Calculate pressure
-    *fptrPressure=((D1*SENS)/pow(2,21)-OFF)/pow(2,15)/100;
+    // Calculate 2nd order temperature (celsius)
+    altData->temperature -= T2;
 
-    // Calculate altitude (in feet)
-    // TODO: Convert to meters
-    *fptrAltitude = (1-pow((*fptrPressure/1013.25),.190284))*145366.45;
-    return RUNNING;
+    // Calculate 2nd order pressure (pascal)
+    altData->pressure = ((adcPressure*SENS)/pow(2,21)-OFF)/pow(2,15);
+
+    // Calculate 2nd order altitude (meters)
+    altData->altitude = 44331.5 - (4946.62*pow(altData->pressure,0.190263));
+
+    // Convert units as per sensor_constants.h
+    altData->temperature *= SENSORS_TEMP_CONVERSION_STANDARD;
+    altData->pressure    *= SENSORS_PRESSURE_CONVERSION_STANDARD;
+    altData->altitude    *= SENSORS_DISTANCE_CONVERSION_STANDARD;
+    return true;
   }
-  return ALT_ADC_CONV_ERR;
+  return false;
 }
 bool
 altReset(void) {

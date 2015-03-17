@@ -13,17 +13,6 @@
 
 //*****************************************************************************
 //
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-//*****************************************************************************
-//
 // Status Codes (Uses LED)
 // See ESFT Status Codes Spreadsheet for more information
 //
@@ -45,8 +34,20 @@ typedef enum STATUSCODE {
     DRL_ERR, BUS_FAULT, USAGE_FAULT, // Fault status
     ACC250_ADC_CONV_ERR, // 250G accelerometer status
     ALT_RESET_ERR, ALT_PROM_ERR, ALT_CRC_ERR, ALT_ADC_CONV_ERR, // Altimeter status
+    COMPASS_ACCEL_STARTUP, COMPASS_MAG_STARTUP, // Compass status
+    GPS_NAV_LOCK_HOLD, // GPS status
     GYRO_STARTUP_ERR // Gyro status
   } StatusCode_t;
+
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern bool setStatus(StatusCode_t scStatus);
 extern void setStatusDefault(StatusCode_t scDefStatus);

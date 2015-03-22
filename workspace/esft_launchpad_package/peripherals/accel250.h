@@ -33,8 +33,8 @@ extern "C" {
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void accel250Init(void);
-extern bool accel250Receive(float* fptrForce);
+extern void accel250Init(float* fForcePtr);
+extern bool accel250Receive(void);
 
 //*****************************************************************************
 //

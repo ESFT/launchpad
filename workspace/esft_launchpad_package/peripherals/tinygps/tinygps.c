@@ -26,6 +26,9 @@
 
 #include "tinygps.h"
 
+#define M_PI 3.14159265358979323846
+#define M_2PI 2*M_PI
+
 // properties
 uint64_t _time = TINYGPS_INVALID_TIME, _new_time;
 uint64_t _date, _new_date;
@@ -80,12 +83,12 @@ uptime() {
 
 float
 radians(float deg) {
-  return deg * (PI / 180);
+  return deg * (M_PI / 180);
 }
 
 float
 degrees(float rad) {
-  return rad * (180 / PI);
+  return rad * (180 / M_PI);
 }
 
 // verify is character is a digit
@@ -114,7 +117,7 @@ tinygps_parse_decimal() {
   isneg = (*p == '-');
   if (isneg) ++p;
 
-  ret = 100UL * gpsatol(p);
+  ret = 100 * gpsatol(p);
 
   while (tinygps_isdigit(*p))
     ++p;
@@ -135,7 +138,7 @@ tinygps_parse_degrees() {
   uint64_t tenk_minutes;
 
   left = gpsatol(_term);
-  tenk_minutes = (left % 100UL) * 10000UL;
+  tenk_minutes = (left % 100) * 10000;
 
   for (p = _term; tinygps_isdigit(*p); ++p)
     ;
@@ -375,8 +378,8 @@ tinygps_distance_between(float lat1, float long1, float lat2, float int64_t2) {
   float slat2 = sin(lat2);
   float clat2 = cos(lat2);
   delta = (clat1 * slat2) - (slat1 * clat2 * cdint64_t);
-  delta = sq(delta);
-  delta += sq(clat2 * sdint64_t);
+  delta = pow(delta,2);
+  delta += pow(clat2 * sdint64_t, 2);
   delta = sqrt(delta);
   float denom = (slat1 * slat2) + (clat1 * clat2 * cdint64_t);
   delta = atan2(delta, denom);
@@ -397,7 +400,7 @@ tinygps_course_to(float lat1, float long1, float lat2, float int64_t2) {
   a2 = cos(lat1) * sin(lat2) - a2;
   a2 = atan2(a1, a2);
   if (a2 < 0.0) {
-    a2 += TWO_PI;
+    a2 += M_2PI;
   }
   return degrees(a2);
 }
@@ -482,3 +485,6 @@ tinygps_f_speed_kmph() {
   float sk = tinygps_f_speed_knots();
   return sk == TINYGPS_INVALID_F_SPEED ? TINYGPS_INVALID_F_SPEED : TINYGPS_KMPH_PER_KNOT * tinygps_f_speed_knots();
 }
+
+#undef M_PI
+#undef M_2PI

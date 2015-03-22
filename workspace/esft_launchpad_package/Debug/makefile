@@ -21,7 +21,6 @@ $(GEN_CMDS__FLAG) \
 "./peripherals/misc.obj" \
 "./peripherals/ssi.obj" \
 "./peripherals/status.obj" \
-"./peripherals/transceiver.obj" \
 "./peripherals/uart.obj" \
 "./peripherals/uartstdio.obj" \
 "./peripherals/tinygps/tinygps.obj" \
@@ -43,11 +42,13 @@ RMDIR := RMDIR /S/Q
 -include subdir_vars.mk
 -include peripherals/subdir_vars.mk
 -include peripherals/tinygps/subdir_vars.mk
+-include peripherals/rfm12b/subdir_vars.mk
 -include peripherals/fatfs/option/subdir_vars.mk
 -include peripherals/fatfs/subdir_vars.mk
 -include subdir_rules.mk
 -include peripherals/subdir_rules.mk
 -include peripherals/tinygps/subdir_rules.mk
+-include peripherals/rfm12b/subdir_rules.mk
 -include peripherals/fatfs/option/subdir_rules.mk
 -include peripherals/fatfs/subdir_rules.mk
 -include objects.mk
@@ -173,8 +174,8 @@ esft_launchpad_package.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel250.pp" "peripherals\altimeter.pp" "peripherals\compass.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\transceiver.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" "peripherals\tinygps\tinygps.pp" "peripherals\fatfs\option\syscall.pp" "peripherals\fatfs\option\unicode.pp" "peripherals\fatfs\ff.pp" "peripherals\fatfs\mmc-dk-tm4c123g.pp" 
-	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel250.obj" "peripherals\altimeter.obj" "peripherals\compass.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\transceiver.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" "peripherals\tinygps\tinygps.obj" "peripherals\fatfs\option\syscall.obj" "peripherals\fatfs\option\unicode.obj" "peripherals\fatfs\ff.obj" "peripherals\fatfs\mmc-dk-tm4c123g.obj" 
+	-$(RM) "main.pp" "tm4c123gh6pm_startup_ccs.pp" "peripherals\accel250.pp" "peripherals\altimeter.pp" "peripherals\compass.pp" "peripherals\flashstore.pp" "peripherals\gpio.pp" "peripherals\gps.pp" "peripherals\gyro.pp" "peripherals\i2c.pp" "peripherals\misc.pp" "peripherals\ssi.pp" "peripherals\status.pp" "peripherals\uart.pp" "peripherals\uartstdio.pp" "peripherals\tinygps\tinygps.pp" "peripherals\fatfs\option\syscall.pp" "peripherals\fatfs\option\unicode.pp" "peripherals\fatfs\ff.pp" "peripherals\fatfs\mmc-dk-tm4c123g.pp" 
+	-$(RM) "main.obj" "tm4c123gh6pm_startup_ccs.obj" "peripherals\accel250.obj" "peripherals\altimeter.obj" "peripherals\compass.obj" "peripherals\flashstore.obj" "peripherals\gpio.obj" "peripherals\gps.obj" "peripherals\gyro.obj" "peripherals\i2c.obj" "peripherals\misc.obj" "peripherals\ssi.obj" "peripherals\status.obj" "peripherals\uart.obj" "peripherals\uartstdio.obj" "peripherals\tinygps\tinygps.obj" "peripherals\fatfs\option\syscall.obj" "peripherals\fatfs\option\unicode.obj" "peripherals\fatfs\ff.obj" "peripherals\fatfs\mmc-dk-tm4c123g.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

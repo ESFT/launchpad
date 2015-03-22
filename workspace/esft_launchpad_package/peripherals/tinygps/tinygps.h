@@ -26,11 +26,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define PI 3.14159265
-#define TWO_PI 2*PI
-
-#define sq(x) ((x)*(x))
-
 #define GPRMC_TERM   "GPRMC"
 #define GPGGA_TERM   "GPGGA"
 

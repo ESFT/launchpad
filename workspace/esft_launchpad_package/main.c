@@ -27,6 +27,7 @@
 
 #include "peripherals/fatfs/diskio.h"
 #include "peripherals/fatfs/ff.h"
+#include "peripherals/rfm12b/rfm12b.h"
 #include "peripherals/tinygps/tinygps.h"
 #include "peripherals/altimeter.h"
 #include "peripherals/accel250.h"
@@ -45,46 +46,21 @@
 //
 //*****************************************************************************
 
-// 250G Accelerometer
-//#define ACCEL_250_ENABLED
-
-// I2C Speed
+// I2C Options
 #define I2C_BASE  I2C0_BASE
 #define I2C_SPEED I2C_SPEED_400
 
+// 250G Accelerometer
+//#define ACCEL_250_ENABLED
 
 // Altimeter
 //#define ALT_ENABLED
 #define ALT_BASE    I2C_BASE
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 
-// Flash
-#define FLASH_DEBUG
-#define FLASH_DEBUG_DELAY 500 // Output delay in ms
-
-// GPS
-//#define GPS_ENABLED
-#define GPS_BASE                UART4_BASE // Be sure to change the interrupt function in startup file
-#define GPS_NAV_LOCK_SENSE_BASE GPIO_PORTC_BASE
-#define GPS_NAV_LOCK_SENSE_PIN  GPIO_PIN_6
-
-// Gyro
-//#define GYRO_ENABLED
-//#define GYRO_BASE            I2C_BASE
-#define GYRO_ADDRESS         GYRO_ADDRESS_SDO_LO
-#define GYRO_DRDY_SENSE_BASE GPIO_PORTB_BASE
-#define GYRO_DRDY_SENSE_PIN  GPIO_PIN_5
-#define GYRO_X_AXIS 0 // Array index that contains corrected X-axis when mounted
-#define GYRO_Y_AXIS 1 // Array index that contains corrected y-axis when mounted
-#define GYRO_Z_AXIS 2 // Array index that contains corrected z-axis when mounted
-
 // Compass
-//#define COMPASS_ENABLED
+#define COMPASS_ENABLED
 #define COMPASS_BASE I2C_BASE
-#define COMPASS_ACCEL_DRDY_SENSE_BASE GPIO_PORTB_BASE
-#define COMPASS_ACCEL_DRDY_SENSE_PIN  GPIO_PIN_0
-#define COMPASS_MAG_DRDY_SENSE_BASE   GPIO_PORTB_BASE
-#define COMPASS_MAG_DRDY_SENSE_PIN    GPIO_PIN_1
 #define COMPASS_X_AXIS 0 // Array index that contains corrected z-axis when mounted
 #define COMPASS_Y_AXIS 1 // Array index that contains corrected y-axis when mounted
 #define COMPASS_Z_AXIS 2 // Array index that contains corrected z-axis when mounted
@@ -92,18 +68,38 @@
 #define COMPASS_HARD_IRON_Y 0 // hard iron estimate for the Y axis
 #define COMPASS_HARD_IRON_Z 0 // hard iron estimate for the Z axis
 
-// Status codes
-#define STATUS_CODES_ENABLED
-#define STATUS_CODE_TIMER_BASE TIMER0_BASE
+// Console
+#define CONSOLE_ENABLED
+#define CONSOLE_DEBUG
+#define CONSOLE_DEBUG_DELAY 500 // Flash output delay in ms (Slows down for human readability)
 
 // ematch GPIO
-#define EMATCH_BASE        GPIO_PORTD_BASE
-#define EMATCH_DROUGE_PRIM GPIO_PIN_0
-#define EMATCH_DROUGE_BACK GPIO_PIN_1
-#define EMATCH_MAIN_PRIM   GPIO_PIN_2
-#define EMATCH_MAIN_BACK   GPIO_PIN_3
+#define EMATCH_BASE        GPIO_PORTC_BASE
+#define EMATCH_DROUGE_PRIM GPIO_PIN_4
+#define EMATCH_DROUGE_BACK GPIO_PIN_5
+#define EMATCH_MAIN_PRIM   GPIO_PIN_6
+#define EMATCH_MAIN_BACK   GPIO_PIN_7
 #define EMATCH_STRENGTH    GPIO_STRENGTH_8MA     // 8 mA output
 #define EMATCH_PIN_TYPE    GPIO_PIN_TYPE_STD_WPD // Weak pulldown
+
+// Flash
+#define CONSOLE_DEBUG
+
+// GPS
+//#define GPS_ENABLED
+#define GPS_BASE                UART1_BASE // Be sure to change the interrupt function in startup file
+#define GPS_NAV_LOCK_SENSE_BASE GPIO_PORTC_BASE
+#define GPS_NAV_LOCK_SENSE_PIN  GPIO_PIN_6
+
+// Gyro
+//#define GYRO_ENABLED
+#define GYRO_BASE            I2C_BASE
+#define GYRO_ADDRESS         GYRO_ADDRESS_SDO_LO
+#define GYRO_DRDY_SENSE_BASE GPIO_PORTB_BASE
+#define GYRO_DRDY_SENSE_PIN  GPIO_PIN_5
+#define GYRO_X_AXIS 0 // Array index that contains corrected X-axis when mounted
+#define GYRO_Y_AXIS 1 // Array index that contains corrected y-axis when mounted
+#define GYRO_Z_AXIS 2 // Array index that contains corrected z-axis when mounted
 
 // Limit SW GPIO
 #define LIMIT_SW_BASE     GPIO_PORTE_BASE
@@ -111,8 +107,18 @@
 #define LIMIT_SW_MAIN     GPIO_PIN_2
 #define LIMIT_SW_PIN_TYPE GPIO_PIN_TYPE_STD_WPU // Weak pullup
 
+// Status codes
+#define STATUS_CODES_ENABLED
+#define STATUS_CODE_TIMER_BASE TIMER0_BASE
+
+// Transceiver
+#define TRANSCEIVER_ENABLED
+#define TRANSCEIVER_NODEID    2
+#define TRANSCEIVER_NETWORKID 99
+#define TRANSCEIVER_GATEWAYID 1
+
 // Prototypes
-void hardReset(void);
+void softReset(void);
 void waitForSwitchPress(uint8_t ui8Pins);
 void ematchInit(void);
 void limitSWInit(void);
@@ -135,6 +141,11 @@ main(void) {
   //
   MAP_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
+  //
+  // Enable processor interrupts.
+  //
+  MAP_IntMasterEnable();
+
   StatusCode_t status;
 #ifdef STATUS_CODES_ENABLED
   //
@@ -148,12 +159,14 @@ main(void) {
   //
   FPUInit();
 
+#ifdef CONSOLE_ENABLED
   //
   // Enable the Console IO
   //
   consoleInit();
-#ifdef FLASH_DEBUG
+#ifdef CONSOLE_DEBUG
   if (consoleIsEnabled()) UARTprintf("%s", "Console flash debug is enabled!\n\r");
+#endif
 #endif
 
   //
@@ -181,7 +194,7 @@ main(void) {
   //
   // Enable the accelerometer
   //
-  accel250Init();
+  accel250Init(&accel250Data);
 #endif
 
 #ifdef ALT_ENABLED
@@ -229,7 +242,7 @@ main(void) {
   // Enable the gyro
   //
   do {
-    status = gyroInit(GYRO_BASE, GYRO_ADDRESS, I2C_SPEED, GYRO_DRDY_SENSE_BASE, GYRO_DRDY_SENSE_PIN);
+    status = gyroInit(GYRO_BASE, GYRO_ADDRESS, I2C_SPEED, GYRO_DRDY_SENSE_BASE, GYRO_DRDY_SENSE_PIN, &gyroDPS[0]);
     setStatus(status);
   } while (status != INITIALIZING);
 #endif
@@ -248,9 +261,13 @@ main(void) {
   // Enable the gyro
   //
   do {
-    status = compassInit(COMPASS_BASE, I2C_SPEED, COMPASS_ACCEL_DRDY_SENSE_BASE, COMPASS_ACCEL_DRDY_SENSE_PIN, COMPASS_MAG_DRDY_SENSE_BASE, COMPASS_MAG_DRDY_SENSE_PIN);
+    status = compassInit(COMPASS_BASE, I2C_SPEED);
     setStatus(status);
   } while (status != INITIALIZING);
+#endif
+
+#ifdef TRANSCEIVER_ENABLED
+  RFM12BInitialize(TRANSCEIVER_NODEID, RF12_433MHZ, TRANSCEIVER_NETWORKID, 0, 0, RF12_3v15);
 #endif
 
   //
@@ -302,7 +319,7 @@ main(void) {
     //
     // Get data from accelerometer
     //
-    accel250DataReceived = accel250Receive(&accel250Data);
+    accel250DataReceived = accel250Receive();
 #endif
 
 #ifdef ALT_ENABLED
@@ -323,15 +340,15 @@ main(void) {
     //
     // Get data from gyro
     //
-    gyroDataReceived = gyroReceive(&gyroDPS[0]);
+    gyroDataReceived = gyroReceive();
 #endif
 
 #ifdef COMPASS_ENABLED
     //
     // Get data from magnetometer/accelerometer
     //
-    compassAccelReceived = compassAccelReceive(&compassAccel[0]);
-    compassMagReceived = compassMagReceive(&compassMag[0]);
+    compassAccelReceived = compassAccelReadXYZ(&compassAccel[0]);
+    compassMagReceived = compassMagReadXYZ(&compassMag[0]);
 #endif
 
 #ifdef ACCEL_250_ENABLED
@@ -399,12 +416,12 @@ main(void) {
       flashWriteBuffer[flashWriteBufferSize] = '\r';   // Overwrite string termination with a a \r
       flashWriteBuffer[flashWriteBufferSize+1] = '\0'; // Append a new string termination
 
-#ifdef FLASH_DEBUG
+#ifdef CONSOLE_DEBUG
       //
       // Send write buffer over UART for debugging
       //
       if (consoleIsEnabled()) UARTprintf("%s", flashWriteBuffer);
-      delay(FLASH_DEBUG_DELAY);
+      delay(CONSOLE_DEBUG_DELAY);
 #endif
 
       //
@@ -445,7 +462,7 @@ void busFaultHandler(void) {
     while (!setStatus(BUS_FAULT)) {};
     i++;
   }
-  hardReset();
+  softReset();
 }
 void usageFaultHandler(void) {
   uint32_t i=0;
@@ -454,7 +471,7 @@ void usageFaultHandler(void) {
     while (!setStatus(USAGE_FAULT)) {};
     i++;
   }
-  hardReset();
+  softReset();
 }
 //*****************************************************************************
 //
@@ -485,9 +502,9 @@ __error__(char *pcFilename, uint32_t ui32Line) {
   }
 }
 #endif
-// Hard Reset
+// Soft Reset (No power loss)
 void
-hardReset(void) {
+softReset(void) {
   HWREG(NVIC_APINT) = NVIC_APINT_VECTKEY | NVIC_APINT_SYSRESETREQ;
 }
 void

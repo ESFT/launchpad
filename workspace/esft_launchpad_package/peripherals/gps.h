@@ -15,7 +15,7 @@
 
 #include "tinygps/tinygps.h"
 
-#define GPS_BAUD 9600
+#define GPS_BAUD 115200
 #define GPS_UART_CONFIG UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE
 
 //*****************************************************************************
@@ -52,8 +52,8 @@ typedef struct {
 //
 //*****************************************************************************
 extern void gpsInit(uint32_t ui32Base, uint32_t ui32SenseBase, uint8_t ui8SensePin, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gpsData);
-extern bool gpsAvailable();
-extern void gpsInterrupt();
+extern bool gpsAvailable(void);
+extern void gpsInterrupt(void);
 
 //*****************************************************************************
 //

@@ -11,8 +11,11 @@
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
+
 #include "inc/hw_i2c.h"
 #include "inc/hw_memmap.h"
+
+#include "misc.h"
 
 #include "i2c.h"
 

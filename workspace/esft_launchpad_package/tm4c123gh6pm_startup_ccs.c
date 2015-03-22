@@ -58,7 +58,10 @@ extern void statusIntHandler(void);
 extern void busFaultHandler(void);
 extern void usageFaultHandler(void);
 extern void sysTickHandler(void);
-extern void gpsInterrupt();
+extern void accel250IntHandler(void);
+extern void gpsIntHandler(void);
+extern void gyroIntHandler(void);
+extern void RFM12BIntHandler(void);
 
 //*****************************************************************************
 //
@@ -87,13 +90,13 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     sysTickHandler,                         // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
-    IntDefaultHandler,                      // GPIO Port B
+    RFM12BIntHandler,                       // GPIO Port A
+    gyroIntHandler,                         // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
     IntDefaultHandler,                      // UART0 Rx and Tx
-    IntDefaultHandler,                      // UART1 Rx and Tx
+    gpsIntHandler,                          // UART1 Rx and Tx
     IntDefaultHandler,                      // SSI0 Rx and Tx
     IntDefaultHandler,                      // I2C0 Master and Slave
     IntDefaultHandler,                      // PWM Fault
@@ -101,7 +104,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // PWM Generator 1
     IntDefaultHandler,                      // PWM Generator 2
     IntDefaultHandler,                      // Quadrature Encoder 0
-    IntDefaultHandler,                      // ADC Sequence 0
+    accel250IntHandler,                     // ADC Sequence 0
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
@@ -147,7 +150,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // SSI2 Rx and Tx
     IntDefaultHandler,                      // SSI3 Rx and Tx
     IntDefaultHandler,                      // UART3 Rx and Tx
-    gpsInterrupt,                           // UART4 Rx and Tx
+    IntDefaultHandler,                      // UART4 Rx and Tx
     IntDefaultHandler,                      // UART5 Rx and Tx
     IntDefaultHandler,                      // UART6 Rx and Tx
     IntDefaultHandler,                      // UART7 Rx and Tx

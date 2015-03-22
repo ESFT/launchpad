@@ -1,16 +1,8 @@
 /***************************************************************************
-  This is a library for the LSM303 Accelerometer and magnentometer/compass
+  This is a library for the LSM303 Compass
 
   Designed specifically to work with the Adafruit LSM303DLHC Breakout
 
-  These displays use I2C to communicate, 2 pins are required to interface.
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit andopen-source hardware by purchasing products
-  from Adafruit!
-
-  Written by Kevin Townsend for Adafruit Industries.
-  BSD license, all text above must be included in any redistribution
  ***************************************************************************/
 #ifndef __COMPASS_H__
 #define __COMPASS_H__
@@ -22,11 +14,12 @@
 
 #define COMPASS_ADDRESS_ACCEL 0x19
 #define COMPASS_ADDRESS_MAG   0x1E
+#define COMPASS_STARTUP_DELAY 1
 
 //
 // Accelerometer
 //
-#define COMPASS_ACCEL_AUTO_INCR     0x01<<7 // 1000 0000
+#define COMPASS_ACCEL_AUTO_INCR     0x80
 #define COMPASS_ACCEL_CTRL_REG1     0x20
 #define COMPASS_ACCEL_CTRL_REG2     0x21
 #define COMPASS_ACCEL_CTRL_REG3     0x22
@@ -197,11 +190,24 @@ extern "C"
 {
 #endif
 
-extern StatusCode_t compassInit(uint32_t ui32Base, bool bSpeed, uint32_t ui32AccelSenseBase, uint8_t ui8AccelSensePin, uint32_t ui32MagSenseBase, uint8_t ui8MagSensePin);
+extern StatusCode_t compassInit(uint32_t ui32Base, bool bSpeed);
+
+//
+// Accelerometer
+//
+
+/*
+ @brief  Read status of Accelerometer
+*/
+extern bool compassAccelStatus(uint8_t* ui8Status);
 /*
  @brief  Reads the raw data from the sensor
 */
-extern bool compassAccelReadXYZRaw(int16_t* i16Raw);
+extern bool compassAccelReadXYZ(float *fAccel);
+/*
+ @brief  Receive pointer to raw value array
+*/
+extern int16_t* compassAccelRetrieveRaw(void);
 /*
  @brief  Enable the accelerometer
 */
@@ -214,14 +220,23 @@ extern bool compassAccelDataConfig(uint8_t ui8BDU, uint8_t ui8Sensitivity, uint8
  @brief  Configure accelerometer interrupts
 */
 extern bool compassAccelIntConfig(uint8_t ui8Interrupts);
+
+//
+// Magnetometer
+//
+
 /*
- @brief  Gets the most recent sensor event
+ @brief  Read status of Magnetometer
 */
-extern bool compassAccelReceive(float *fAccel);
+extern bool compassMagStatus(uint8_t* ui8Status);
 /*
  @brief  Reads the raw data from the sensor
 */
-extern bool compassMagReadXYZRaw(int16_t *i16Raw);
+extern bool compassMagReadXYZ(float *fMag);
+/*
+ @brief  Receive pointer to raw value array
+*/
+extern int16_t* compassMagRetrieveRaw(void);
 /*!
  @brief  Enable the magnetometer
 */
@@ -229,11 +244,16 @@ extern bool compassMagPowerOn(uint8_t ui8ConversionMode);
 /*
  @brief  Sets the magnetometer's gain
 */
-extern bool compassSetMagGain(uint8_t gain);
+extern bool compassMagSetGain(uint8_t gain);
 /*
- @brief  Gets the most recent sensor event
+ @brief  Enable the temp sensor and set the ODR
 */
-extern bool compassMagReceive(float *fMag);
+extern bool compassMagSetODRTemp(bool bTempEn, uint8_t ui8ODR);
+
+//
+// eCompass
+//
+
 /*
  * Brief: tilt-compensated e-Compass code
  * fBx, fBy, fBz: the three components of the magnetometer sensor

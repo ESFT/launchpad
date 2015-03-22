@@ -50,7 +50,7 @@ gpsInit(uint32_t ui32Base, uint32_t ui32SenseBase, uint8_t ui8SensePin, uint32_t
   UARTIntInit(ui32Base, UART_INT_RX | UART_INT_RT);
 }
 void
-gpsInterrupt() {
+gpsIntHandler(void) {
   MAP_UARTIntClear(gps_ui32Base, UART_INT_RX | UART_INT_RT);
   uint8_t newChar;
   do {
@@ -67,6 +67,8 @@ gpsInterrupt() {
   }
 }
 bool
-gpsAvailable() {
-  return gps_dataInitialized & MAP_GPIOPinRead(gps_ui32SenseBase, gps_ui8SensePin);
+gpsAvailable(void) {
+  bool temp = gps_dataInitialized;
+  gps_dataInitialized = false;
+  return (temp && MAP_GPIOPinRead(gps_ui32SenseBase, gps_ui8SensePin));
 }

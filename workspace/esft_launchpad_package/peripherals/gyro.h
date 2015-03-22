@@ -289,7 +289,7 @@ extern bool gyroHPF(uint32_t ui32hpf);
 /*
  * @brief: Initialize L3G4200D
  */
-extern StatusCode_t gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin);
+extern StatusCode_t gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS);
 /*
  * @brief: Int1 selection configuration
  * @param[in]: GYRO_NON_HPF_FILT_INT, GYRO_HPF_FILT_INT, GYRO_LPF_FILT_INT, GYRO_HPF_LPF_INT
@@ -328,15 +328,17 @@ extern bool gyroPowerDown(void);
  */
 extern bool gyroPowerOn(uint32_t ui32odr);
 /*
- * @brief: Read raw X,Y, Z  angular rates
- * @param[in]: ptr to x, y and z data points
+ * @brief: Read X,Y, Z calibrated angular rates
  */
-extern bool gyroReadXYZRaw(int16_t* i16Raw);
+extern bool gyroReadXYZ(void);
 /*
- * @brief: Read calibrated X,Y, Z  angular rates
- * @param[in]: ptr to x, y and z data points
+ * @brief: Retrieve pointer to raw XYZ array
  */
-extern bool gyroReceive(float* fDPS);
+extern int16_t* gyroRetrieveXYZRaw(void);
+/*
+ * @brief: Return if new unread data is available
+ */
+extern bool gyroReceive(void);
 /*
  * @brief: Read temperature
  * @param[in]: ptr to temperature data

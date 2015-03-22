@@ -15,35 +15,39 @@
 #include "gyro.h"
 #include "i2c.h"
 #include "misc.h"
+#include "sensor_constants.h"
 #include "status.h"
 
 static uint32_t gyro_ui32Base;
 static uint8_t gyro_ui8GyroAddr;
 static uint32_t gyro_ui32SenseBase;
-static uint8_t gyro_ui8SensePin;
 static uint32_t gyro_ui32IntFlags;
 
 static float gyro_fSensitivity = 0;
 static float gyro_fZeroRate[3] = { 0, 0, 0 };
 static float gyro_fThreshold[3] = { 0, 0, 0 };
+static int16_t gyro_i16Raw[3] = { 0, 0, 0 };
+static bool gyro_dataAvailable;
+
+float* gyro_fDPS;
 
 void
-gyroInterrupt() {
+gyroIntHandler() {
   MAP_GPIOIntClear(gyro_ui32SenseBase, gyro_ui32IntFlags);
-  if (MAP_GPIOPinRead(gyro_ui32SenseBase, gyro_ui8SensePin)) {
-
+  if (gyroReadXYZ()) {
+    gyro_dataAvailable = true;
   }
 }
 void
 gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple) {
   float fSums[3] = { 0, 0, 0 }, fSigma[3] = { 0, 0, 0 };
   uint32_t i, j;
-  int16_t i16Raw[3];
   for (i = 0; i < ui32SampleCount; i++) {
-    while (!gyroReadXYZRaw(&i16Raw[0])) {};
+    while (!gyroReceive()) {
+    }
     for (j = 0; j < 3; j++) {
-      fSums[j] += i16Raw[j];
-      fSigma[j] += pow(i16Raw[j], 2);
+      fSums[j] += gyro_i16Raw[j];
+      fSigma[j] += pow(gyro_i16Raw[j], 2);
     }
   }
   for (i = 0; i < 3; i++) {
@@ -52,20 +56,22 @@ gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple) {
   }
 }
 StatusCode_t
-gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin) {
+gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS) {
   gyro_ui32Base = ui32Base;
   gyro_ui8GyroAddr = ui8GyroAddr;
   gyro_ui32SenseBase = ui32SenseBase;
-  gyro_ui8SensePin = ui8SensePin;
+  gyro_fDPS = fDPS;
 
   //
   // Enable the I2C module used by the gyro
   //
   I2CInit(ui32Base, bSpeed);
-  gpioInputInit(ui32SenseBase, ui8SensePin, GPIO_PIN_TYPE_STD);
-  gyro_ui32IntFlags = gpioIntInit(ui32SenseBase, ui8SensePin, GPIO_RISING_EDGE);
 
   delay(GYRO_STARTUP_DELAY);
+
+  // Enable interrupts for immediate data processing based on INT2 (DRDY)
+  gpioInputInit(ui32SenseBase, ui8SensePin, GPIO_PIN_TYPE_STD);
+  gyro_ui32IntFlags = gpioIntInit(ui32SenseBase, ui8SensePin, GPIO_RISING_EDGE);
 
   // 1. Test if device is there
   if (!gyroDetect()) return GYRO_STARTUP_ERR;
@@ -79,6 +85,10 @@ gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32Sense
   if (!gyroPowerOn(GYRO_ODR800FC110)) return GYRO_STARTUP_ERR;
 
   delay(GYRO_CONFIG_DELAY);
+
+  // Reset DRDY state
+  while (!gyroReadXYZ()) {
+  }
 
   gyroCalibrate(GYRO_NUM_SAMPLES, GYRO_SIGMA_MULTIPLE);
 
@@ -186,36 +196,36 @@ gyroOutSel(uint32_t ui32out) {
   return true;
 }
 bool
-gyroReadXYZRaw(int16_t* i16Raw) {
+gyroReadXYZ(void) {
   uint32_t i;
   uint8_t ui8Data[6] = { 0 };
-  if (MAP_GPIOPinRead(gyro_ui32SenseBase, gyro_ui8SensePin) != gyro_ui8SensePin) return false;  // No new data is available
+  float fDelta[3];
   if (!I2CWrite(gyro_ui32Base, gyro_ui8GyroAddr, GYRO_OUT_X_L | GYRO_AUTO_INCREMENT)) return false;
   if (!I2CBurstRead(gyro_ui32Base, gyro_ui8GyroAddr, &ui8Data[0], 6)) return false;
   for (i = 0; i < 3; i++) {
-    i16Raw[i] = (((int16_t) (ui8Data[(i * 2) + 1])) << 8) | ui8Data[(i * 2)];
+    gyro_i16Raw[i] = (((int16_t) ui8Data[(i * 2) + 1]) << 8) | ui8Data[(i * 2)];
+    fDelta[i] = gyro_i16Raw[i] - gyro_fZeroRate[i];  // Use the calibration data to modify the sensor value.
+    if (abs(fDelta[i]) < gyro_fThreshold[i])  // If data is below threshold, output 0
+      fDelta[i] = 0;
+    gyro_fDPS[i] = gyro_fSensitivity * fDelta[i];  // Multiply the sensor value by the sensitivity factor to get degrees per second.
   }
   return true;
 }
+int16_t*
+gyroRetrieveXYZRaw(void) {
+  return &gyro_i16Raw[0];
+}
 bool
-gyroReceive(float* fDPS) {
-  float fDelta[3];
-  uint16_t i;
-  int16_t i16Raw[3] = { 0 };
-  if (!gyroReadXYZRaw(&i16Raw[0])) return false;
-  for (i = 0; i < 3; i++) {
-    fDelta[i] = i16Raw[0] - gyro_fZeroRate[i];  // Use the calibration data to modify the sensor value.
-    if (abs(fDelta[i]) < gyro_fThreshold[i])  // If data is below threshold, output 0
-      fDelta[i] = 0;
-    fDPS[i] = gyro_fSensitivity * fDelta[i];  // Multiply the sensor value by the sensitivity factor to get degrees per second.
-  }
-  return true;
+gyroReceive(void) {
+  bool temp = gyro_dataAvailable;
+  gyro_dataAvailable = false;
+  return temp;
 }
 bool
 gyroReadTemp(int8_t *ui8temp) {
   uint8_t ui8Data;
   if (!I2CWrite(gyro_ui32Base, gyro_ui8GyroAddr, GYRO_OUT_TEMP)) return false;
   if (!I2CRead(gyro_ui32Base, gyro_ui8GyroAddr, &ui8Data)) return false;
-  *ui8temp = (int8_t) (40 - ui8Data);
+  *ui8temp = ((int8_t) (40 - ui8Data)) * SENSORS_TEMP_CONVERSION_STANDARD;
   return true;
 }

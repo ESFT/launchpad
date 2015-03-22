@@ -73,7 +73,7 @@
 #define STATUS_CODES_ENABLED
 
 // Prototypes
-void hardReset(void);
+void softReset(void);
 
 //*****************************************************************************
 //
@@ -293,7 +293,7 @@ void busFaultHandler(void) {
     delay(1);
     i++;
   }
-  hardReset();
+  softReset();
 }
 void usageFaultHandler(void) {
   uint32_t i=0;
@@ -302,7 +302,7 @@ void usageFaultHandler(void) {
     delay(1);
     i++;
   }
-  hardReset();
+  softReset();
 }
 
 #ifdef DEBUG
@@ -323,6 +323,6 @@ __error__(char *pcFilename, uint32_t ui32Line) {
 
 // Hard Reset
 void
-hardReset(void) {
+softReset(void) {
   HWREG(NVIC_APINT) = NVIC_APINT_VECTKEY | NVIC_APINT_SYSRESETREQ;
 }

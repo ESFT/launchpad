@@ -118,7 +118,7 @@
 
 // Transceiver
 //#define TRANSCEIVER_ENABLED
-#define TRANSCEIVER_NODEID    2
+#define TRANSCEIVER_NODEID    1
 #define TRANSCEIVER_NETWORKID 99
 #define TRANSCEIVER_GATEWAYID 1
 #define TRANSCEIVER_END "KR0KCT"
@@ -131,7 +131,7 @@ void limitSWInit(void);
 void ematchFire(uint8_t ui8Pins);
 bool limitSWPressed(uint8_t ui8Pins);
 
-static bool _bTick = false;
+static bool   _bTick = false;
 
 static bool   _bAltimeterActive = false;
 static float* _fAltMaxAltRecordedPtr;
@@ -491,7 +491,10 @@ main(void) {
 
 #ifdef TRANSCEIVER_ENABLED
 #ifdef GPS_ENABLED
-    transBuffSize = sprintf((char*) &transBuff[0], "%s%s", gpsGPGGAPtr, "KR0KCT");
+    if (RFM12BCanSend()) {
+      transBuffSize = sprintf((char*) &transBuff[0], "%s%s", gpsGPGGAPtr, "KR0KCT");
+      RFM12BSend(TRANSCEIVER_NODEID+1, &transBuff[0], transBuffSize, true);
+    }
 #endif
 #endif
   } // main while end

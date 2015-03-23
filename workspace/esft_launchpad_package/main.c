@@ -129,6 +129,7 @@ void waitForSwitchPress(uint8_t ui8Pins);
 void ematchInit(void);
 void limitSWInit(void);
 void ematchFire(uint8_t ui8Pins);
+void ematchOff(uint8_t ui8Pins);
 bool limitSWPressed(uint8_t ui8Pins);
 
 static bool   _bTick = false;
@@ -551,10 +552,22 @@ sysTickHandler(void)
   // chute deployment control. Called every tick
   //
   bool swPressed = limitSWPressed(LIMIT_SW_DROUGE | LIMIT_SW_MAIN);
+  if (!(swPressed & LIMIT_SW_DROUGE)) {
+    ematchOff(EMATCH_DROUGE_PRIM || EMATCH_DROUGE_BACK);
+  }
+  if (!(swPressed & LIMIT_SW_MAIN)) {
+    ematchOff(EMATCH_MAIN_PRIM || EMATCH_MAIN_BACK);
+  }
   if ((swPressed & LIMIT_SW_DROUGE) && !_bDroguePrimFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_PRIM_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr)) {
-    if (ematchFire(EMATCH_DROUGE_PRIM) && EMATCH_DROUGE_PRIM) _bDroguePrimFired = true;
+    if (ematchFire(EMATCH_DROUGE_PRIM) && EMATCH_DROUGE_PRIM) {
+      _bDroguePrimFired = true;
+      _bAltimeterActive = true;
+    }
   } else if ((swPressed & LIMIT_SW_DROUGE) && !_bDrogueBackFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_BACK_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr))  {
-    if (ematchFire(EMATCH_DROUGE_BACK) && EMATCH_DROUGE_BACK) _bDrogueBackFired = true;
+    if (ematchFire(EMATCH_DROUGE_BACK) && EMATCH_DROUGE_BACK) {
+      _bDrogueBackFired = true;
+      _bAltimeterActive = true;
+    }
   } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_PRIM_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
     if (ematchFire(EMATCH_MAIN_PRIM) && EMATCH_MAIN_PRIM) _bMainPrimFired = true;
   } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_BACK_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
@@ -598,6 +611,11 @@ limitSWInit(void) {
 }
 int32_t
 ematchFire(uint8_t ui8Pins) {
+  MAP_GPIOPinWrite(EMATCH_BASE, ui8Pins, ui8Pins);
+  return MAP_GPIOPinRead(EMATCH_BASE, ui8Pins);
+}
+int32_t
+ematchOff(uint8_t ui8Pins) {
   MAP_GPIOPinWrite(EMATCH_BASE, ui8Pins, ui8Pins);
   return MAP_GPIOPinRead(EMATCH_BASE, ui8Pins);
 }

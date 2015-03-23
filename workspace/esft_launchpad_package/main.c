@@ -117,7 +117,7 @@
 #define STATUS_CODE_TIMER_BASE TIMER0_BASE
 
 // Transceiver
-//#define TRANSCEIVER_ENABLED
+#define TRANSCEIVER_ENABLED
 #define TRANSCEIVER_NODEID    1
 #define TRANSCEIVER_NETWORKID 99
 #define TRANSCEIVER_GATEWAYID 1
@@ -552,17 +552,13 @@ sysTickHandler(void)
   //
   bool swPressed = limitSWPressed(LIMIT_SW_DROUGE | LIMIT_SW_MAIN);
   if ((swPressed & LIMIT_SW_DROUGE) && !_bDroguePrimFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_PRIM_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr)) {
-    _bDroguePrimFired = true;
-    ematchFire(EMATCH_DROUGE_PRIM);
+    if (ematchFire(EMATCH_DROUGE_PRIM) && EMATCH_DROUGE_PRIM) _bDroguePrimFired = true;
   } else if ((swPressed & LIMIT_SW_DROUGE) && !_bDrogueBackFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_BACK_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr))  {
-    _bDrogueBackFired = true;
-    ematchFire(EMATCH_DROUGE_BACK);
+    if (ematchFire(EMATCH_DROUGE_BACK) && EMATCH_DROUGE_BACK) _bDrogueBackFired = true;
   } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_PRIM_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
-    _bMainPrimFired = true;
-    ematchFire(EMATCH_MAIN_PRIM);
+    if (ematchFire(EMATCH_MAIN_PRIM) && EMATCH_MAIN_PRIM) _bMainPrimFired = true;
   } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_BACK_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
-    _bMainBackFired = true;
-    ematchFire(EMATCH_MAIN_BACK);
+    if (ematchFire(EMATCH_MAIN_BACK) && EMATCH_MAIN_BACK) _bMainBackFired = true;
   }
 
   _bTick = !_bTick;
@@ -600,9 +596,10 @@ void
 limitSWInit(void) {
   gpioInputInit(LIMIT_SW_BASE, LIMIT_SW_DROUGE | LIMIT_SW_MAIN, GPIO_PIN_TYPE_STD_WPU);
 }
-void
+int32_t
 ematchFire(uint8_t ui8Pins) {
   MAP_GPIOPinWrite(EMATCH_BASE, ui8Pins, ui8Pins);
+  return MAP_GPIOPinRead(EMATCH_BASE, ui8Pins);
 }
 bool
 limitSWPressed(uint8_t ui8Pins) {

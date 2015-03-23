@@ -9,6 +9,7 @@
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
+#include "driverlib/uart.h"
 
 #include "inc/hw_gpio.h"
 #include "inc/hw_memmap.h"
@@ -53,7 +54,7 @@ consoleIsEnabled(void) {
 }
 void
 consoleInit(void) {
-  UARTInit(CONSOLE_BASE);
+  UARTInit(UART0_BASE, 115200, (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE | UART_CONFIG_WLEN_8));
 
   //
   // Configure UARTstdio Library

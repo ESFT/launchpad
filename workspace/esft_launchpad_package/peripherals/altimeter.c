@@ -20,6 +20,8 @@ static uint32_t alt_ui32Base;
 static uint8_t  alt_ui8AltAddr;
 static uint16_t alt_ui16Prom[8];
 
+static AltData_t* alt_altData;
+
 uint8_t
 __altCRC4(void) {
   int32_t cnt; // simple counter
@@ -87,10 +89,11 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   return true;
 }
 StatusCode_t
-altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed) {
+altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed, AltData_t* altData) {
   uint8_t altCRC;
   alt_ui32Base = ui32Base;
   alt_ui8AltAddr = ui8AltAddr;
+  alt_altData = altData;
 
   //
   // Enable the I2C module used by the altimeter
@@ -126,7 +129,7 @@ altProm(void) {
   return true;
 }
 bool
-altReceive(uint8_t ui8OSR, AltData_t* altData) {
+altReceive(uint8_t ui8OSR) {
   // Digital pressure and temp
   uint32_t adcPressure = 0;   // ADC value of the pressure conversion
   uint32_t adcTemperature = 0;   // ADC value of the temperature conversion
@@ -146,34 +149,35 @@ altReceive(uint8_t ui8OSR, AltData_t* altData) {
     SENS=alt_ui16Prom[1]*pow(2,16)+dT*alt_ui16Prom[3]/pow(2,7);
 
     // Calculate 1st order temperature (celsius)
-    altData->temperature=(2000+(dT*alt_ui16Prom[6])/pow(2,23))/100;
+    alt_altData->temperature=(2000+(dT*alt_ui16Prom[6])/pow(2,23))/100;
 
     // Calculate 2nd order temp difference, offset, and sensitivity (MS5607 2nd order algorithm)
-    if (altData->temperature < 20) {
+    if (alt_altData->temperature < 20) {
       T2 = pow(dT, 2)/pow(2,31);
-      OFF2 = 61*pow((altData->temperature-2000),2)/pow(2,4);
-      SENS2 = 2*pow((altData->temperature-2000),2);
-      if (altData->temperature < -15) {
-        OFF2 = OFF2+15*pow((altData->temperature+1500),2);
-        SENS2 = SENS2+8*pow((altData->temperature+1500),2);
+      OFF2 = 61*pow((alt_altData->temperature-2000),2)/pow(2,4);
+      SENS2 = 2*pow((alt_altData->temperature-2000),2);
+      if (alt_altData->temperature < -15) {
+        OFF2 = OFF2+15*pow((alt_altData->temperature+1500),2);
+        SENS2 = SENS2+8*pow((alt_altData->temperature+1500),2);
       }
     }
     OFF = OFF - OFF2;
     SENS = SENS - SENS2;
 
     // Calculate 2nd order temperature (celsius)
-    altData->temperature -= T2;
+    alt_altData->temperature -= T2;
 
     // Calculate 2nd order pressure (pascal)
-    altData->pressure = ((adcPressure*SENS)/pow(2,21)-OFF)/pow(2,15);
+    alt_altData->pressure = ((adcPressure*SENS)/pow(2,21)-OFF)/pow(2,15);
 
     // Calculate 2nd order altitude (meters)
-    altData->altitude = 44331.5 - (4946.62*pow(altData->pressure,0.190263));
+    alt_altData->altitude = 44331.5 - (4946.62*pow(alt_altData->pressure,0.190263));
 
     // Convert units as per sensor_constants.h
-    altData->temperature *= SENSORS_TEMP_CONVERSION_STANDARD;
-    altData->pressure    *= SENSORS_PRESSURE_CONVERSION_STANDARD;
-    altData->altitude    *= SENSORS_DISTANCE_CONVERSION_STANDARD;
+    alt_altData->temperature = alt_altData->temperature * SENSORS_TEMP_CONVERSION_STANDARD;
+    alt_altData->pressure    = alt_altData->pressure    * SENSORS_PRESSURE_CONVERSION_STANDARD;
+    alt_altData->altitude    = alt_altData->altitude    * SENSORS_DISTANCE_CONVERSION_STANDARD;
+
     return true;
   }
   return false;

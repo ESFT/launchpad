@@ -86,6 +86,14 @@
 #define RF_GPIO_INT_SYSCTL_PERIPH  SYSCTL_PERIPH_GPIOA
 #define RF_RFM_IRQ                 GPIO_PIN_7
 
+// GPIO For interrupts
+#define RF_TX_EN_BASE GPIO_PORTD_BASE
+#define RF_TX_EN_PIN  GPIO_PIN_6
+#define RF_TX_DRIVE_STRENGTH GPIO_STRENGTH_2MA
+#define RF_RX_EN_BASE GPIO_PORTD_BASE
+#define RF_RX_EN_PIN  GPIO_PIN_7
+#define RF_RX_DRIVE_STRENGTH GPIO_STRENGTH_2MA
+
 // RF12 command codes
 #define RF_RECEIVER_ON  0x82DD
 #define RF_XMITTER_ON   0x823D
@@ -100,7 +108,7 @@
 #define RF_LBD_BIT      0x0400
 #define RF_RSSI_BIT     0x0100
 
-extern void SPIInit(void);
+extern void RFM12BGPIOInit(void);
 
 extern void RFM12BIntHandler(void);
 

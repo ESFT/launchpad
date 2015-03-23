@@ -27,7 +27,7 @@
 
 #include "peripherals/fatfs/diskio.h"
 #include "peripherals/fatfs/ff.h"
-#include "peripherals/rfm12b/rfm12b.h"
+#include "peripherals/RFM12B/RFM12B.h"
 #include "peripherals/tinygps/tinygps.h"
 #include "peripherals/altimeter.h"
 #include "peripherals/accel250.h"
@@ -59,7 +59,7 @@
 #define ALT_ADDRESS ALT_ADDRESS_CSB_LO
 
 // Compass
-#define COMPASS_ENABLED
+//#define COMPASS_ENABLED
 #define COMPASS_BASE I2C_BASE
 #define COMPASS_X_AXIS 0 // Array index that contains corrected z-axis when mounted
 #define COMPASS_Y_AXIS 1 // Array index that contains corrected y-axis when mounted
@@ -73,7 +73,7 @@
 #define CONSOLE_DEBUG
 #define CONSOLE_DEBUG_DELAY 500 // Flash output delay in ms (Slows down for human readability)
 
-// ematch GPIO
+// ematch
 #define EMATCH_BASE        GPIO_PORTC_BASE
 #define EMATCH_DROUGE_PRIM GPIO_PIN_4
 #define EMATCH_DROUGE_BACK GPIO_PIN_5
@@ -81,15 +81,20 @@
 #define EMATCH_MAIN_BACK   GPIO_PIN_7
 #define EMATCH_STRENGTH    GPIO_STRENGTH_8MA     // 8 mA output
 #define EMATCH_PIN_TYPE    GPIO_PIN_TYPE_STD_WPD // Weak pulldown
+#define EMATCH_DROGUE_PRIM_FIRE_ALT_DIFF 20 // In meters
+#define EMATCH_DROGUE_BACK_FIRE_ALT_DIFF  40 // In meters
+#define EMATCH_MAIN_PRIM_FIRE_ALT_DIFF   100 // In meters
+#define EMATCH_MAIN_BACK_FIRE_ALT_DIFF    1500 // In meters
 
 // Flash
 #define CONSOLE_DEBUG
 
 // GPS
-//#define GPS_ENABLED
+#define GPS_ENABLED
 #define GPS_BASE                UART1_BASE // Be sure to change the interrupt function in startup file
 #define GPS_NAV_LOCK_SENSE_BASE GPIO_PORTC_BASE
 #define GPS_NAV_LOCK_SENSE_PIN  GPIO_PIN_6
+//#define GPS_WAIT_FOR_LOCK
 
 // Gyro
 //#define GYRO_ENABLED
@@ -112,10 +117,11 @@
 #define STATUS_CODE_TIMER_BASE TIMER0_BASE
 
 // Transceiver
-#define TRANSCEIVER_ENABLED
+//#define TRANSCEIVER_ENABLED
 #define TRANSCEIVER_NODEID    2
 #define TRANSCEIVER_NETWORKID 99
 #define TRANSCEIVER_GATEWAYID 1
+#define TRANSCEIVER_END "KR0KCT"
 
 // Prototypes
 void softReset(void);
@@ -124,6 +130,19 @@ void ematchInit(void);
 void limitSWInit(void);
 void ematchFire(uint8_t ui8Pins);
 bool limitSWPressed(uint8_t ui8Pins);
+
+static bool _bTick = false;
+
+static bool   _bAltimeterActive = false;
+static float* _fAltMaxAltRecordedPtr;
+static float* _fAltCurrAltRecordedPtr;
+static float* _fGPSMaxAltRecordedPtr;
+static float* _fGPSCurrAltRecordedPtr;
+
+static bool   _bDroguePrimFired = false;
+static bool   _bDrogueBackFired = false;
+static bool   _bMainPrimFired   = false;
+static bool   _bMainBackFired   = false;
 
 //*****************************************************************************
 //
@@ -145,6 +164,35 @@ main(void) {
   // Enable processor interrupts.
   //
   MAP_IntMasterEnable();
+
+  //
+  // Configure SysTick for a 200Hz interrupt.
+  // FatFs driver wants a 10 ms tick (every other tick)
+  // Chute deployment system wants a 5ms tick (every tick)
+  //
+  MAP_SysTickPeriodSet(MAP_SysCtlClockGet() / 200);
+  MAP_SysTickEnable();
+  MAP_SysTickIntEnable();
+
+  //
+  // Enable LED control
+  //
+  LEDInit();
+
+  //
+  // Enable button control
+  //
+  buttonsInit();
+
+  //
+  // Enable ematch control
+  //
+  ematchInit();
+
+  //
+  // Enable seperation detection
+  //
+  limitSWInit();
 
   StatusCode_t status;
 #ifdef STATUS_CODES_ENABLED
@@ -169,20 +217,6 @@ main(void) {
 #endif
 #endif
 
-  //
-  // Enable button control
-  //
-  buttonsInit();
-
-  //
-  // Enable ematch control
-  //
-  ematchInit();
-
-  //
-  // Enable seperation detection
-  //
-  limitSWInit();
 
 #ifdef ACCEL_250_ENABLED
   //
@@ -203,12 +237,17 @@ main(void) {
   //
   bool  altDataReceived; // Altimeter data has been received
   AltData_t altData; // Altimeter data
+  float fAltMaxAltRecorded;
+  float fAltCurrAltRecorded;
+
+  _fAltMaxAltRecordedPtr = &fAltMaxAltRecorded;
+  _fAltCurrAltRecordedPtr = &fAltCurrAltRecorded;
 
   //
   // Enable the altimeter
   //
   do {
-    status = altInit(ALT_BASE, ALT_ADDRESS, I2C_SPEED);
+    status = altInit(ALT_BASE, ALT_ADDRESS, I2C_SPEED, altDataPtr);
     setStatus(status);
   } while (status != INITIALIZING);
 
@@ -219,16 +258,23 @@ main(void) {
   // GPS Variables
   //
   bool     gpsDataReceived = false; // GPS data has been received
-  GPSData_t gpsData;
+  int8_t*   gpsGPGGAPtr = gpsGPGGA();
+  GPSData_t gpsData; // GPS data
+  float fGPSCurrAltRecorded;
+  _fGPSCurrAltRecordedPtr = &fGPSCurrAltRecorded;
+  _fGPSMaxAltRecordedPtr = gpsMaxAlt();
 
   //
   // Enable the GPS
   //
-  gpsInit(GPS_BASE, GPS_NAV_LOCK_SENSE_BASE, GPS_NAV_LOCK_SENSE_PIN, GPS_BAUD, GPS_UART_CONFIG, &gpsData);
+  gpsInit(GPS_BASE, GPS_BAUD, GPS_UART_CONFIG, &gpsData);
 
+#ifdef GPS_WAIT_FOR_LOCK
   while (!MAP_GPIOPinRead(GPS_NAV_LOCK_SENSE_BASE, GPS_NAV_LOCK_SENSE_PIN)) {
     setStatus(GPS_NAV_LOCK_HOLD);
   }
+  while (!gpsAvailable) {}
+#endif
 #endif
 
 #ifdef GYRO_ENABLED
@@ -268,6 +314,8 @@ main(void) {
 
 #ifdef TRANSCEIVER_ENABLED
   RFM12BInitialize(TRANSCEIVER_NODEID, RF12_433MHZ, TRANSCEIVER_NETWORKID, 0, 0, RF12_3v15);
+  uint32_t transBuffSize = 0;
+  uint8_t transBuff[128] = "";
 #endif
 
   //
@@ -280,14 +328,6 @@ main(void) {
   bool     flashSpaceAvail = true;
   uint8_t  flashWriteBuffer[256] = {0}; // Buffer of the data to write
   int32_t  flashWriteBufferSize  =  0 ; // Length of the data to write
-
-  //
-  // Configure SysTick for a 100Hz interrupt.  The FatFs driver wants a 10 ms
-  // tick.
-  //
-  MAP_SysTickPeriodSet(MAP_SysCtlClockGet() / 100);
-  MAP_SysTickEnable();
-  MAP_SysTickIntEnable();
 
   while (f_mount(&flashMount, "", 1) != FR_OK) {
     setStatusDefault(MMC_MOUNT_ERR);
@@ -326,7 +366,11 @@ main(void) {
     //
     // Get data from altimeter
     //
-    altDataReceived = altReceive(ALT_ADC_4096, &altData);
+    if (_bAltimeterActive) {
+      altDataReceived = altReceive(ALT_ADC_4096, &altData);
+      *_fAltCurrAltRecordedPtr = altData.altitude;
+      if (*_fAltCurrAltRecordedPtr > *_fAltMaxAltRecordedPtr) *_fAltMaxAltRecordedPtr = *_fAltCurrAltRecordedPtr;
+    }
 #endif
 
 #ifdef GPS_ENABLED
@@ -361,10 +405,10 @@ main(void) {
 #endif
 
 #ifdef ALT_ENABLED
-    if (altDataReceived) { // alt data was received
-      flashWriteBufferSize += sprintf((char*) &flashWriteBuffer[flashWriteBufferSize], "%f,%f,%f,", altData.temperature, altData.pressure, altData.altitude);
+    if (_bAltimeterActive && altDataReceived) { // alt data was received
+      flashWriteBufferSize += sprintf((char*) &flashWriteBuffer[flashWriteBufferSize], "%d,%f,%f,%f,", _bAltimeterActive, altData.temperature, altData.pressure, altData.altitude);
     } else {
-      flashWriteBufferSize += sprintf((char*) &flashWriteBuffer[flashWriteBufferSize], ",,,");
+      flashWriteBufferSize += sprintf((char*) &flashWriteBuffer[flashWriteBufferSize], ",,,,");
       setStatus(ALT_ADC_CONV_ERR);
     }
 #endif
@@ -373,6 +417,13 @@ main(void) {
     flashWriteBufferSize += sprintf((char*) &flashWriteBuffer[flashWriteBufferSize], "%d,%d,%d,%d,%d,%d,%d,%d,%u.l,%f,%f,%f,%f,%s,%f,",
       gpsDataReceived, gpsData.year, (uint8_t) gpsData.month, (uint8_t) gpsData.day, (uint8_t) gpsData.hour, (uint8_t) gpsData.minute, (uint8_t) gpsData.second, (uint8_t) gpsData.hundredths,
       (unsigned long) gpsData.fix_age, gpsData.latitude, gpsData.longitude, gpsData.altitude, gpsData.course, (char*) gpsData.cardinal, gpsData.speed);
+
+    *_fGPSCurrAltRecordedPtr = gpsData.altitude;
+    if (*_fGPSCurrAltRecordedPtr > *_fGPSMaxAltRecordedPtr) *_fGPSMaxAltRecordedPtr = *_fGPSCurrAltRecordedPtr;
+#ifndef ALT_ENABLED
+    *_fAltCurrAltRecordedPtr = *_fGPSCurrAltRecordedPtr;
+    *_fAltMaxAltRecordedPtr = *_fGPSMaxAltRecordedPtr;
+#endif
 #endif
 
 #ifdef GYRO_ENABLED
@@ -434,9 +485,15 @@ main(void) {
       //
       // Reset write buffer after data is written
       //
-      flashWriteBuffer[0] = '\0'; // Set first value to null to "erase" string
+      flashWriteBuffer[0]  = 0; // Set first value to null to "erase" string
       flashWriteBufferSize = 0; // Reset the buffer size to 0
     }
+
+#ifdef TRANSCEIVER_ENABLED
+#ifdef GPS_ENABLED
+    transBuffSize = sprintf((char*) &transBuff[0], "%s%s", gpsGPGGAPtr, "KR0KCT");
+#endif
+#endif
   } // main while end
 
   //
@@ -482,10 +539,30 @@ void usageFaultHandler(void) {
 void
 sysTickHandler(void)
 {
-    //
-    // Call the FatFs tick timer.
-    //
-    disk_timerproc();
+  //
+  // Call the FatFs tick timer every 10ms
+  //
+  if (_bTick) disk_timerproc();
+
+  //
+  // chute deployment control. Called every tick
+  //
+  bool swPressed = limitSWPressed(LIMIT_SW_DROUGE | LIMIT_SW_MAIN);
+  if ((swPressed & LIMIT_SW_DROUGE) && !_bDroguePrimFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_PRIM_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr)) {
+    _bDroguePrimFired = true;
+    ematchFire(EMATCH_DROUGE_PRIM);
+  } else if ((swPressed & LIMIT_SW_DROUGE) && !_bDrogueBackFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_BACK_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr))  {
+    _bDrogueBackFired = true;
+    ematchFire(EMATCH_DROUGE_BACK);
+  } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_PRIM_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
+    _bMainPrimFired = true;
+    ematchFire(EMATCH_MAIN_PRIM);
+  } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_BACK_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
+    _bMainBackFired = true;
+    ematchFire(EMATCH_MAIN_BACK);
+  }
+
+  _bTick = !_bTick;
 }
 #ifdef DEBUG
 //*****************************************************************************

@@ -26,11 +26,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GPRMC_TERM   "GPRMC"
-#define GPGGA_TERM   "GPGGA"
+#define GPRMC_TERM "GPRMC"
+#define GPGGA_TERM "GPGGA"
 
 #define TINYGPS_INVALID_F_ANGLE 1000.0
-#define TINYGPS_INVALID_F_ALTITUDE 1000000.0
+#define TINYGPS_INVALID_F_ALTITUDE -9999.0
 #define TINYGPS_INVALID_F_SPEED -1.0
 
 #define TINYGPS_VERSION 12 // software version of this library
@@ -56,23 +56,25 @@ extern void tinygps_get_position(int64_t *latitude, int64_t *uint64_titude, uint
 // date as ddmmyy, time as hhmmsscc, and age in milliseconds
 extern void tinygps_get_datetime(uint64_t *date, uint64_t *time, uint64_t *age);
 
-// signed altitude in centimeters (from GPGGA sentence)
-extern int64_t altitude();
+// signed tinygps_altitude in centimeters (from GPGGA sentence)
+extern int64_t tinygps_altitude(void);
 
-// course in last full GPRMC sentence in 100th of a degree
-extern uint64_t course();
+// tinygps_course in last full GPRMC sentence in 100th of a degree
+extern uint64_t tinygps_course(void);
 
-// speed in last full GPRMC sentence in 100ths of a knot
-extern uint64_t speed();
+// tinygps_speed in last full GPRMC sentence in 100ths of a knot
+extern uint64_t tinygps_speed(void);
 
 extern void tinygps_f_get_position(float *latitude, float *uint64_titude, uint64_t *fix_age);
 extern void tinygps_crack_datetime(int32_t *year, uint8_t *month, uint8_t *day, uint8_t *hour, uint8_t *minute, uint8_t *second, uint8_t *hundredths, uint64_t *fix_age);
-extern float tinygps_f_altitude();
-extern float tinygps_f_course();
-extern float tinygps_f_speed_knots();
-extern float tinygps_f_speed_mph();
-extern float tinygps_f_speed_mps();
-extern float tinygps_f_speed_kmph();
+extern float tinygps_f_altitude(void);
+extern float tinygps_f_course(void);
+extern float tinygps_f_speed_knots(void);
+extern float tinygps_f_speed_mph(void);
+extern float tinygps_f_speed_mps(void);
+extern float tinygps_f_speed_kmph(void);
+extern int8_t* tinygps_getGPGGA(void);
+extern int8_t* tinygps_getGPRMC(void);
 
 static int32_t
 library_version() {

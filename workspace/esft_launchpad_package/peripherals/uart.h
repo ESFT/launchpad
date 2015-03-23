@@ -5,8 +5,8 @@
  *      Author: Ryan
  */
 
-#ifndef UART_H_
-#define UART_H_
+#ifndef __UART_H__
+#define __UART_H__
 
 #include <stdint.h>
 
@@ -20,7 +20,7 @@ extern "C"
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void UARTInit(uint32_t ui32Base);
+extern void UARTInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config);
 extern void UARTIntInit(uint32_t ui32Base, uint32_t ui32IntFlags);
 
 //*****************************************************************************

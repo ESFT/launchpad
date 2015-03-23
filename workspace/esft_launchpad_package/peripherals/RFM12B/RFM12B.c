@@ -15,7 +15,7 @@
 #include "inc/hw_types.h"
 
 #include "../gpio.h"
-#include "RFM12B.h"
+#include "rfm12b.h"
 
 static uint8_t rxfill;           // number of data uint8_ts in rf12_buf
 static int8_t rxstate;           // current transceiver state
@@ -36,7 +36,7 @@ static uint8_t nodeID;    // address of this node
 uint8_t* Data;
 uint8_t* DataLen;
 
-extern uint8_t rf12_buf[RF_MAX];          // recv/xmit buf, including hdr & crc uint8_ts
+static uint8_t rf12_buf[RF_MAX];          // recv/xmit buf, including hdr & crc uint8_ts
 
 //
 // Prototypes
@@ -124,9 +124,7 @@ RFM12BSetSpeedFast(void) {
 }
 
 void
-RFM12BSPIInit(void) {
-  DESELECT();
-
+RFM12BGPIOInit(void) {
   /* Enable the peripherals used to drive the SDC on SSI */
   MAP_SysCtlPeripheralEnable(RF_SSI_SYSCTL_PERIPH);
   MAP_SysCtlPeripheralEnable(RF_GPIO_SYSCTL_PERIPH);
@@ -151,6 +149,12 @@ RFM12BSPIInit(void) {
 
   gpioInputInit(RF_GPIO_INT_PORT_BASE, RF_RFM_IRQ, GPIO_PIN_TYPE_STD_WPU);
   rfm_irq_int_flags = gpioIntInit(RF_GPIO_INT_PORT_BASE, RF_RFM_IRQ, GPIO_RISING_EDGE);
+
+  gpioOutputInit(RF_TX_EN_BASE, GPIO_PIN_6, RF_TX_DRIVE_STRENGTH, GPIO_PIN_TYPE_STD);
+  gpioOutputInit(RF_RX_EN_BASE, GPIO_PIN_7, RF_RX_DRIVE_STRENGTH, GPIO_PIN_TYPE_STD);
+
+  MAP_GPIOPinWrite(RF_TX_EN_BASE, GPIO_PIN_6, GPIO_PIN_6);
+  MAP_GPIOPinWrite(RF_RX_EN_BASE, GPIO_PIN_7, GPIO_PIN_7);
 }
 
 uint8_t
@@ -201,7 +205,7 @@ RFM12BInitialize(uint8_t ID, uint8_t freqBand, uint8_t networkid, uint8_t txPowe
   //while(millis()<60);
   nodeID = ID;
   networkID = networkid;
-  SPIInit();
+  RFM12BGPIOInit();
   RFM12BXFER(0x0000);  // intitial SPI transfer added to avoid power-up problem
   RFM12BXFER(RF_SLEEP_MODE);  // DC (disable clk pin), enable lbd
 
@@ -261,19 +265,36 @@ RFM12BIntHandler(void) {
     if (rxfill >= rf12_len+ 6 || rxfill >= RF_MAX) RFM12BXFER(RF_IDLE_MODE);
   } else {
     uint8_t out;
-
     if (rxstate < 0) {
       uint8_t pos = 4 + rf12_len + rxstate++;
       out = rf12_buf[pos];
       rf12_crc = _crc16_update(rf12_crc, out);
-    } else
-    switch (rxstate++) {
-      case TXSYN1: out = 0x2D; break;
-      case TXSYN2: out = networkID; rxstate = -(3 + rf12_len); break;
-      case TXCRC1: out = rf12_crc; break;
-      case TXCRC2: out = rf12_crc >> 8; break;
-      case TXDONE: RFM12BXFER(RF_IDLE_MODE);  // fall through
-      default: out = 0xAA;
+    } else {
+      switch (rxstate++) {
+        case TXSYN1: {
+          out = 0x2D;
+          break;
+        }
+        case TXSYN2: {
+          out = networkID;
+          rxstate = -(3 + rf12_len);
+          break;
+        }
+        case TXCRC1: {
+          out = rf12_crc;
+          break;
+        }
+        case TXCRC2: {
+          out = rf12_crc >> 8;
+          break;
+        }
+        case TXDONE: {
+          RFM12BXFER(RF_IDLE_MODE);  // fall through
+        }
+        default: {
+          out = 0xAA;
+        }
+      }
     }
 
     //Serial.print(out, HEX); Serial.print(' ');
@@ -332,14 +353,15 @@ RFM12BSendStart(uint8_t toNodeID, const void* sendBuf, uint8_t sendLen, bool req
   RFM12BSendWait();
 }
 
-void RFM12BSendStart2(uint8_t toNodeID, bool requestACK, bool sendACK) {
-  rf12_hdr1 = toNodeID | (sendACK ? RF12_HDR_ACKCTLMASK : 0);
+void
+RFM12BSendStart2(uint8_t toNodeID, bool requestACK, bool sendACK) {
+  rf12_hdr1= toNodeID | (sendACK ? RF12_HDR_ACKCTLMASK : 0);
   rf12_hdr2 = nodeID | (requestACK ? RF12_HDR_ACKCTLMASK : 0);
   if (crypter != 0) crypter(true);
   rf12_crc = ~0;
   rf12_crc = _crc16_update(rf12_crc, networkID);
   rxstate = TXPRE1;
-  RFM12BXFER(RF_XMITTER_ON); // bytes will be fed via interrupts
+  RFM12BXFER(RF_XMITTER_ON);  // bytes will be fed via interrupts
 }
 
 /// Should be called immediately after reception in case sender wants ACK
@@ -476,9 +498,10 @@ RFM12BCryptFunction(bool sending) {
 
 void
 RFM12BEncrypt(const uint8_t* key, uint8_t keyLen) {
+  uint8_t i;
   // by using a pointer to CryptFunction, we only link it in when actually used
   if (key != 0) {
-    for (uint8_t i = 0; i < keyLen; ++i)
+    for (i = 0; i < keyLen; ++i)
       ((uint8_t*) cryptKey)[i] = key[i];
     crypter = RFM12BCryptFunction;
   } else

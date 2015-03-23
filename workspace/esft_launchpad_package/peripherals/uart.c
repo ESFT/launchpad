@@ -22,7 +22,7 @@
 #include "uart.h"
 
 void
-UARTInit(uint32_t ui32Base) {
+UARTInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config) {
   switch (ui32Base) {
     case UART0_BASE: {
       //
@@ -218,6 +218,7 @@ UARTInit(uint32_t ui32Base) {
       break;
     }
   }
+  MAP_UARTConfigSetExpClk(ui32Base, MAP_SysCtlClockGet(), ui32Baud, ui32Config);
 }
 void
 UARTIntInit(uint32_t ui32Base, uint32_t ui32IntFlags) {

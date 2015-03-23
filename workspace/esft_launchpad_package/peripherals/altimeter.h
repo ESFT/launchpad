@@ -128,9 +128,9 @@ typedef struct {
 //
 //*****************************************************************************
 extern bool         altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData);
-extern StatusCode_t altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed);
+extern StatusCode_t altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed, AltData_t* altData);
 extern bool         altProm(void);
-extern bool         altReceive(uint8_t ui8OSR, AltData_t* altData);
+extern bool         altReceive(uint8_t ui8OSR);
 extern bool         altReset(void);
 
 //*****************************************************************************

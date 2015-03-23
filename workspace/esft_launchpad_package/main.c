@@ -128,13 +128,15 @@ void softReset(void);
 void waitForSwitchPress(uint8_t ui8Pins);
 void ematchInit(void);
 void limitSWInit(void);
-void ematchFire(uint8_t ui8Pins);
-void ematchOff(uint8_t ui8Pins);
+int32_t ematchFire(uint8_t ui8Pins);
+int32_t ematchOff(uint8_t ui8Pins);
 bool limitSWPressed(uint8_t ui8Pins);
 
 static bool   _bTick = false;
 
+#ifdef ALT_ENABLED
 static bool   _bAltimeterActive = false;
+#endif
 static float* _fAltMaxAltRecordedPtr;
 static float* _fAltCurrAltRecordedPtr;
 static float* _fGPSMaxAltRecordedPtr;
@@ -195,7 +197,11 @@ main(void) {
   //
   limitSWInit();
 
-  StatusCode_t status;
+  //
+  // Status variables
+  //
+  StatusCode_t status = INITIALIZING;
+  setStatusDefault(status);
 #ifdef STATUS_CODES_ENABLED
   //
   // Enable status codes
@@ -559,19 +565,23 @@ sysTickHandler(void)
     ematchOff(EMATCH_MAIN_PRIM || EMATCH_MAIN_BACK);
   }
   if ((swPressed & LIMIT_SW_DROUGE) && !_bDroguePrimFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_PRIM_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr)) {
-    if (ematchFire(EMATCH_DROUGE_PRIM) && EMATCH_DROUGE_PRIM) {
+    if (ematchFire(EMATCH_DROUGE_PRIM) & EMATCH_DROUGE_PRIM) {
       _bDroguePrimFired = true;
+#ifdef ALT_ENABLED
       _bAltimeterActive = true;
+#endif
     }
   } else if ((swPressed & LIMIT_SW_DROUGE) && !_bDrogueBackFired && ((*_fGPSMaxAltRecordedPtr - EMATCH_DROGUE_BACK_FIRE_ALT_DIFF) > *_fGPSCurrAltRecordedPtr))  {
-    if (ematchFire(EMATCH_DROUGE_BACK) && EMATCH_DROUGE_BACK) {
+    if (ematchFire(EMATCH_DROUGE_BACK) & EMATCH_DROUGE_BACK) {
       _bDrogueBackFired = true;
+#ifdef ALT_ENABLED
       _bAltimeterActive = true;
+#endif
     }
   } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_PRIM_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
-    if (ematchFire(EMATCH_MAIN_PRIM) && EMATCH_MAIN_PRIM) _bMainPrimFired = true;
-  } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainPrimFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_BACK_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
-    if (ematchFire(EMATCH_MAIN_BACK) && EMATCH_MAIN_BACK) _bMainBackFired = true;
+    if (ematchFire(EMATCH_MAIN_PRIM) & EMATCH_MAIN_PRIM) _bMainPrimFired = true;
+  } else if ((swPressed & LIMIT_SW_MAIN) && !_bMainBackFired && ((*_fAltMaxAltRecordedPtr - EMATCH_MAIN_BACK_FIRE_ALT_DIFF) > *_fAltCurrAltRecordedPtr)) {
+    if (ematchFire(EMATCH_MAIN_BACK) & EMATCH_MAIN_BACK) _bMainBackFired = true;
   }
 
   _bTick = !_bTick;
@@ -616,7 +626,7 @@ ematchFire(uint8_t ui8Pins) {
 }
 int32_t
 ematchOff(uint8_t ui8Pins) {
-  MAP_GPIOPinWrite(EMATCH_BASE, ui8Pins, ui8Pins);
+  MAP_GPIOPinWrite(EMATCH_BASE, ui8Pins, 0);
   return MAP_GPIOPinRead(EMATCH_BASE, ui8Pins);
 }
 bool

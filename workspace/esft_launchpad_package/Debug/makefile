@@ -155,7 +155,7 @@ BIN_OUTPUTS__QUOTED += \
 all: esft_launchpad_package.out
 
 dependents:
-	-cd D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) all
+	-cd D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
 
 # Tool invocations
 esft_launchpad_package.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib

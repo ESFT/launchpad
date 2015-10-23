@@ -24,16 +24,16 @@ extern "C" {
 #endif
 
 // TODO: Get correct Zero G Vout. Current value is theory
-#define ACCEL_250_ZERO_G_VOUT (1.65F)
+#define ACCEL_250_ZERO_G_VOUT (1.581F)
 // TODO: Calculate correct G resolution. Current value is theory.
-#define ACCEL_250_G_RESOLUTION (0.0066F)
+#define ACCEL_250_G_RESOLUTION (0.1223443223443223F)
 
 //*****************************************************************************
 //
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void accel250Init(float* fForcePtr);
+extern void accel250Init(float* fForcePtr, StatusCode_t* status);
 extern bool accel250Receive(void);
 
 //*****************************************************************************

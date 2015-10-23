@@ -34,9 +34,10 @@ typedef enum STATUSCODE {
     DRL_ERR, BUS_FAULT, USAGE_FAULT, // Fault status
     ACC250_ADC_CONV_ERR, // 250G accelerometer status
     ALT_RESET_ERR, ALT_PROM_ERR, ALT_CRC_ERR, ALT_ADC_CONV_ERR, // Altimeter status
-    COMPASS_ACCEL_STARTUP, COMPASS_MAG_STARTUP, // Compass status
+    COMPASS_ACCEL_STARTUP, COMPASS_MAG_STARTUP, COMPASS_READ_ERR, // Compass status
     GPS_NAV_LOCK_HOLD, // GPS status
-    GYRO_STARTUP_ERR // Gyro status
+    GYRO_STARTUP_ERR, GYRO_READ_ERR, // Gyro status
+    ALT_GPS_NOT_FOUND // Can't track altitude. UNSAFE!
   } StatusCode_t;
 
 //*****************************************************************************

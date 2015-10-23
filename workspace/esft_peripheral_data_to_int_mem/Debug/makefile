@@ -4,10 +4,12 @@
 
 SHELL = cmd.exe
 
-CG_TOOL_ROOT := D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9
+CG_TOOL_ROOT := C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5
+
+GEN_OPTS__FLAG := 
+GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
-$(GEN_CMDS__FLAG) \
 "./main.obj" \
 "./tm4c123gh6pm_startup_ccs.obj" \
 "./peripherals/accel250.obj" \
@@ -23,8 +25,9 @@ $(GEN_CMDS__FLAG) \
 "./peripherals/uart.obj" \
 "./peripherals/uartstdio.obj" \
 "../tm4c123gh6pm.cmd" \
+$(GEN_CMDS__FLAG) \
 -l"libc.a" \
--l"D:/Code/git_repo/launchpad/workspace/esft_peripheral_data_to_int_mem/../../TivaWare_C_Series-2.1.0.12573\driverlib\ccs\Debug\driverlib.lib" \
+-l"P:/tm4c/workspace/esft_peripheral_data_to_int_mem/../../tivaware\driverlib\ccs\Debug\driverlib.lib" \
 
 -include ../makefile.init
 
@@ -64,11 +67,11 @@ endif
 ifneq ($(strip $(C67_DEPS)),)
 -include $(C67_DEPS)
 endif
-ifneq ($(strip $(C??_DEPS)),)
--include $(C??_DEPS)
-endif
 ifneq ($(strip $(CLA_DEPS)),)
 -include $(CLA_DEPS)
+endif
+ifneq ($(strip $(C??_DEPS)),)
+-include $(C??_DEPS)
 endif
 ifneq ($(strip $(CPP_DEPS)),)
 -include $(CPP_DEPS)
@@ -97,6 +100,9 @@ endif
 ifneq ($(strip $(C43_DEPS)),)
 -include $(C43_DEPS)
 endif
+ifneq ($(strip $(INO_DEPS)),)
+-include $(INO_DEPS)
+endif
 ifneq ($(strip $(S67_DEPS)),)
 -include $(S67_DEPS)
 endif
@@ -108,6 +114,9 @@ ifneq ($(strip $(S43_DEPS)),)
 endif
 ifneq ($(strip $(OPT_DEPS)),)
 -include $(OPT_DEPS)
+endif
+ifneq ($(strip $(PDE_DEPS)),)
+-include $(PDE_DEPS)
 endif
 ifneq ($(strip $(S64_DEPS)),)
 -include $(S64_DEPS)
@@ -130,32 +139,33 @@ EXE_OUTPUTS__QUOTED += \
 "esft_peripheral_data_to_int_mem.out" \
 
 BIN_OUTPUTS += \
-esft_peripheral_data_to_int_mem.hex \
+esft_peripheral_data_to_int_mem.bin \
 
 BIN_OUTPUTS__QUOTED += \
-"esft_peripheral_data_to_int_mem.hex" \
+"esft_peripheral_data_to_int_mem.bin" \
 
 
 # All Target
 all: esft_peripheral_data_to_int_mem.out
 
 dependents:
-	-cd D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug && $(MAKE) clean all
+	-cd P:/tm4c/tivaware/driverlib/ccs/Debug && $(MAKE) clean all
 
 # Tool invocations
-esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib
+esft_peripheral_data_to_int_mem.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) P:/tm4c/tivaware/driverlib/ccs/Debug/driverlib.lib
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --opt_for_speed=5 -g --gcc --define=ccs="ccs" --define=DEBUG --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --display_error_number --diag_warning=225 --diag_wrap=off -z -m"esft_peripheral_data_to_int_mem.map" --heap_size=0 --stack_size=4096 -i"D:/Code/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/" -i"D:/Code/git_repo/launchpad/TivaWare_C_Series-2.1.0.12573/utils/" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/lib" -i"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="esft_peripheral_data_to_int_mem_linkInfo.xml" --rom_model -o "esft_peripheral_data_to_int_mem.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --opt_for_speed=5 -g --gcc --define=ccs="ccs" --define=DEBUG --define=TARGET_IS_TM4C123_RB1 --define=PART_TM4C123GH6PM --diag_wrap=off --diag_warning=225 --display_error_number -z -m"esft_peripheral_data_to_int_mem.map" --heap_size=0 --stack_size=4096 -i"P:/tm4c/tivaware/" -i"P:/tm4c/tivaware/utils/" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/lib" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/include" --reread_libs --display_error_number --diag_wrap=off --warn_sections --xml_link_info="esft_peripheral_data_to_int_mem_linkInfo.xml" --rom_model -o "esft_peripheral_data_to_int_mem.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	@$(MAKE) --no-print-directory post-build
 
-esft_peripheral_data_to_int_mem.hex: $(EXE_OUTPUTS)
+esft_peripheral_data_to_int_mem.bin: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	"D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armhex"  -o "esft_peripheral_data_to_int_mem.hex" $(EXE_OUTPUTS__QUOTED)
+	"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/bin/armhex"  -o "esft_peripheral_data_to_int_mem.bin" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
+	@$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
@@ -166,12 +176,12 @@ clean:
 	-@echo ' '
 
 post-build:
-	-"D:/Programs/ti/ccsv6/utils/tiobj2bin/tiobj2bin" "esft_peripheral_data_to_int_mem.out" "esft_peripheral_data_to_int_mem.bin" "D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armofd" "D:/Programs/ti/ccsv6/tools/compiler/arm_5.1.9/bin/armhex" "D:/Programs/ti/ccsv6/utils/tiobj2bin/mkhex4bin"
+	-"C:/ti/ccsv6/utils/tiobj2bin/tiobj2bin" "esft_peripheral_data_to_int_mem.out" "esft_peripheral_data_to_int_mem.bin" "C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/bin/armofd" "C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.5/bin/armhex" "C:/ti/ccsv6/utils/tiobj2bin/mkhex4bin"
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY: post-build
-D:/Code/git_repo/launchpad/tivaware_c_series-2.1.0.12573/driverlib/ccs/Debug/driverlib.lib:
+P:/tm4c/tivaware/driverlib/ccs/Debug/driverlib.lib:
 
 -include ../makefile.targets
 

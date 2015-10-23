@@ -7,20 +7,22 @@
 
 #include <math.h>
 
-#include "driverlib/rom.h"
-#include "driverlib/rom_map.h"
-
 #include "altimeter.h"
 #include "i2c.h"
 #include "sensor_constants.h"
 #include "misc.h"
 #include "uartstdio.h"
 
+#include "driverlib/rom.h"
+#include "driverlib/rom_map.h"
+
+
 static uint32_t alt_ui32Base;
 static uint8_t  alt_ui8AltAddr;
 static uint16_t alt_ui16Prom[8];
 
 static AltData_t* alt_altData;
+static StatusCode_t* alt_status;
 
 uint8_t
 __altCRC4(void) {
@@ -89,11 +91,12 @@ altADCConversion(uint8_t ui8Cmd, uint32_t* ui32ptrData) {
   return true;
 }
 StatusCode_t
-altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed, AltData_t* altData) {
+altInit(uint32_t ui32Base, uint8_t ui8AltAddr, bool bSpeed, AltData_t* altData, StatusCode_t* status) {
   uint8_t altCRC;
   alt_ui32Base = ui32Base;
   alt_ui8AltAddr = ui8AltAddr;
   alt_altData = altData;
+  alt_status = status;
 
   //
   // Enable the I2C module used by the altimeter
@@ -180,12 +183,14 @@ altReceive(uint8_t ui8OSR) {
 
     return true;
   }
+  *alt_status = ALT_ADC_CONV_ERR;
   return false;
 }
 bool
 altReset(void) {
   if (!I2CWrite(alt_ui32Base, alt_ui8AltAddr, ALT_RESET)) {
     if (consoleIsEnabled()) UARTprintf("ALT_RESET write error\n\r");
+    *alt_status = ALT_RESET_ERR;
     return false;
   }
   delay(ALT_RESET_DELAY);

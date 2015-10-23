@@ -11,8 +11,11 @@
  * board.
  */
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "diskio.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
@@ -20,13 +23,12 @@
 #include "driverlib/sysctl.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
-#include "diskio.h"
 
 /* Definitions for MMC/SDC command */
-#define CMD0    (0x40+0)    /* GO_IDLE_STATE */
-#define CMD1    (0x40+1)    /* SEND_OP_COND */
-#define CMD8    (0x40+8)    /* SEND_IF_COND */
-#define CMD9    (0x40+9)    /* SEND_CSD */
+#define CMD0     (0x40+0)     /* GO_IDLE_STATE */
+#define CMD1     (0x40+1)     /* SEND_OP_COND */
+#define CMD8     (0x40+8)     /* SEND_IF_COND */
+#define CMD9     (0x40+9)     /* SEND_CSD */
 #define CMD10    (0x40+10)    /* SEND_CID */
 #define CMD12    (0x40+12)    /* STOP_TRANSMISSION */
 #define CMD16    (0x40+16)    /* SET_BLOCKLEN */
@@ -51,6 +53,7 @@
 #define SDC_SSI_TX              GPIO_PIN_5
 #define SDC_SSI_RX              GPIO_PIN_4
 #define SDC_SSI_FSS             GPIO_PIN_3
+
 #define SDC_SSI_PINS            (SDC_SSI_TX | SDC_SSI_RX | SDC_SSI_CLK |      \
                                  SDC_SSI_FSS)
 
@@ -659,12 +662,12 @@ disk_timerproc(void) {
 DWORD
 get_fattime(void) {
 
-  return ((2007UL - 1980) << 25)    // Year = 2007
-  | (6UL << 21)            // Month = June
-      | (5UL << 16)            // Day = 5
-      | (11U << 11)            // Hour = 11
-      | (38U << 5)            // Min = 38
-      | (0U >> 1)                // Sec = 0
+  return ((2007UL - 1980) << 25) |    // Year = 2007
+          (6UL << 21) |          // Month = June
+          (5UL << 16) |          // Day = 5
+          (11U << 11) |          // Hour = 11
+          (38U << 5)  |          // Min = 38
+          (0U  >> 1)            // Sec = 0
   ;
 
 }

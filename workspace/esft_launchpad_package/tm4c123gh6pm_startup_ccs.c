@@ -61,7 +61,6 @@ extern void sysTickHandler(void);
 extern void accel250IntHandler(void);
 extern void gpsIntHandler(void);
 extern void gyroIntHandler(void);
-extern void RFM12BIntHandler(void);
 
 //*****************************************************************************
 //
@@ -90,7 +89,7 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     sysTickHandler,                         // The SysTick handler
-    RFM12BIntHandler,                       // GPIO Port A
+    IntDefaultHandler,                       // GPIO Port A
     gyroIntHandler,                         // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D

@@ -56,8 +56,9 @@ typedef struct {
 // Module function prototypes.
 //
 //*****************************************************************************
-extern void gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gpsData);
+extern void gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gpsData, uint32_t ui32NavLockPort, uint8_t ui8NovLockPin);
 extern bool gpsAvailable(void);
+extern bool gpsNavLocked(void);
 extern void gpsInterrupt(void);
 extern int8_t* gpsGPGGA(void);
 extern int8_t* gpsGPRMC(void);

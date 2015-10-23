@@ -25,13 +25,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "flashstore.h"
+
 #include "inc/hw_types.h"
 #include "driverlib/debug.h"
 #include "driverlib/flash.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 
-#include "flashstore.h"
 
 //*****************************************************************************
 //

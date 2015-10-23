@@ -5,6 +5,8 @@
  *      Author: Ryan
  */
 
+#include "gpio.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
@@ -14,7 +16,6 @@
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 
-#include "gpio.h"
 
 void
 gpioSysCtlInit(uint32_t ui32Port) {

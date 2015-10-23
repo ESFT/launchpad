@@ -5,6 +5,9 @@
  *      Author: Ryan
  */
 
+#include "accel250.h"
+#include "sensor_constants.h"
+
 #include "driverlib/adc.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
@@ -15,14 +18,11 @@
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 
-#include "accel250.h"
-#include "sensor_constants.h"
-
 float* accel250_fForcePtr;
 bool   accel250_dataAvailable;
 
 void
-accel250Init(float* fForcePtr) {
+accel250Init(float* fForcePtr, StatusCode_t* status) {
   accel250_fForcePtr = fForcePtr;
 
   //
@@ -65,7 +65,7 @@ accel250IntHandler(void) {
   ui32SampleCount = MAP_ADCSequenceDataGet(ADC0_BASE, 0, &ui32ADCData);
   if (ui32SampleCount > 0) {
     *accel250_fForcePtr = (((float)ui32ADCData * 3.3 / 4095 - ACCEL_250_ZERO_G_VOUT) / ACCEL_250_G_RESOLUTION) * SENSORS_GRAVITY_STANDARD;
-    accel250_dataAvailable = true;;
+    accel250_dataAvailable = true;
   }
   MAP_ADCProcessorTrigger(ADC0_BASE, 0);
 }

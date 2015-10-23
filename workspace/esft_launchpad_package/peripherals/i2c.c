@@ -5,6 +5,9 @@
  *      Author: Ryan
  */
 
+#include "i2c.h"
+#include "misc.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/i2c.h"
 #include "driverlib/pin_map.h"
@@ -15,9 +18,7 @@
 #include "inc/hw_i2c.h"
 #include "inc/hw_memmap.h"
 
-#include "misc.h"
 
-#include "i2c.h"
 
 void
 I2CInit(uint32_t ui32Base, bool bSpeed) {

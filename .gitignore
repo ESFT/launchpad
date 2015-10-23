@@ -1,3 +1,20 @@
+#nonESFT
+workspace/lab*
+workspace/tm4c.eww
+workspace/.metadata
+workspace/dvt
+workspace/RemoteSystemsTempFiles
+workspace/settings
+tivaware/boot_loader
+tivaware/examples
+tivaware/grlib
+tivaware/IQmath
+tivaware/nfclib
+tivaware/sensorlib
+tivaware/tools
+tivaware/usblib
+tivaware/utils
+
 # Assembled binaries and object directories
 obj/
 

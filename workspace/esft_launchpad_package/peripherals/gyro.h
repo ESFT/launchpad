@@ -289,7 +289,7 @@ extern bool gyroHPF(uint32_t ui32hpf);
 /*
  * @brief: Initialize L3G4200D
  */
-extern StatusCode_t gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS);
+extern StatusCode_t gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS, StatusCode_t* status);
 /*
  * @brief: Int1 selection configuration
  * @param[in]: GYRO_NON_HPF_FILT_INT, GYRO_HPF_FILT_INT, GYRO_LPF_FILT_INT, GYRO_HPF_LPF_INT

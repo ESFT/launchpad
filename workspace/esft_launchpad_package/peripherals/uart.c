@@ -5,6 +5,8 @@
  *      Author: Ryan
  */
 
+#include "uart.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/uart.h"
@@ -18,8 +20,6 @@
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
 #include "inc/hw_uart.h"
-
-#include "uart.h"
 
 void
 UARTInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config) {

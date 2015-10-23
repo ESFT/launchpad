@@ -7,12 +7,13 @@
 
 #include <math.h>
 
+#include "compass.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 
 #include "gpio.h"
-#include "compass.h"
 #include "i2c.h"
 #include "misc.h"
 #include "sensor_constants.h"
@@ -35,9 +36,12 @@ static float compass_fMagGaussLSB_XY = 1100.0;  // Varies with gain
 static float compass_fMagGaussLSB_Z = 980.00;  // Varies with gain
 static int16_t compass_i16MagRaw[3];
 
+static StatusCode_t *compass_status;
+
 StatusCode_t
-compassInit(uint32_t ui32Base, bool bSpeed) {
+compassInit(uint32_t ui32Base, bool bSpeed, StatusCode_t *status) {
   compass_ui32Base = ui32Base;
+  compass_status = status;
 
   //
   // Enable the I2C module used by the compass
@@ -54,6 +58,7 @@ compassInit(uint32_t ui32Base, bool bSpeed) {
   if (!compassMagSetGain(COMPASS_MAG_GAIN_5P6)) return COMPASS_MAG_STARTUP;
   if (!compassMagSetODRTemp(false, COMPASS_ODR220)) return COMPASS_MAG_STARTUP;
   if (!compassMagPowerOn(COMPASS_MAG_SINGLE)) return COMPASS_MAG_STARTUP;
+  *compass_status = INITIALIZING;
   return INITIALIZING;
 }
 

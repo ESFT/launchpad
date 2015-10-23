@@ -5,6 +5,8 @@
  *      Author: Ryan
  */
 
+#include "status.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom.h"
@@ -16,7 +18,6 @@
 #include "inc/hw_memmap.h"
 
 #include "misc.h"
-#include "status.h"
 
 static StatusCode_t statusCode = INITIALIZING;  // Current Status Code
 static StatusCode_t statusCodeDefault = INITIALIZING;  // Default state if none are set
@@ -106,11 +107,11 @@ statusCodeInterruptInit(uint32_t ui32Base) {
 }
 void
 statusIntHandler(void) {  // Timer interrupt to handle status codes
-  static uint8_t statusColor;          // Status Code Color
+  static uint8_t statusColor[3];        // Status Code Color
   static uint32_t statusBlinkDelay[3];  // Status Code Delays
-  static uint8_t statusBeepIndex = 0;  // Index of beep LED
-  static uint32_t statusDelayIndex = 0;  // Index of beep length
-  static bool statusBeepOn = false;  // Is "beep" still active
+  static uint8_t statusBeepIndex = 0;   // Index of beep LED
+  static uint32_t statusDelayIndex = 0; // Index of beep length
+  static bool statusBeepOn = false;     // Is "beep" still active
 
   //
   // Disable interrupts to prevent loops
@@ -130,127 +131,190 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
     //
     switch (statusCode) {
       case INITIALIZING: {  // device is initializing
-        statusColor = WHITE_LED;
+        statusColor[0] = WHITE_LED;
+        statusColor[1] = WHITE_LED;
+        statusColor[2] = WHITE_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
+      case GPS_NAV_LOCK_HOLD: {  // GPS Nav lock hold
+        statusColor[0] = WHITE_LED;
+        statusColor[1] = WHITE_LED;
+        statusColor[2] = WHITE_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
+        break;
+      }
       case INITIALIZING_HOLD: {  // device is initializing hold
-        statusColor = WHITE_LED;
+	    statusColor[0] = WHITE_LED;
+    	statusColor[1] = WHITE_LED;
+    	statusColor[2] = WHITE_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case RUNNING: {  // code is running
-        statusColor = GREEN_LED;
+        statusColor[0] = GREEN_LED;
+        statusColor[1] = GREEN_LED;
+        statusColor[2] = GREEN_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case MMC_MOUNT_ERR: {
-        statusColor = BLUE_LED;
+        statusColor[0] = BLUE_LED;
+        statusColor[1] = BLUE_LED;
+        statusColor[2] = BLUE_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case MMC_OPEN_ERR: {
-        statusColor = BLUE_LED;
+        statusColor[0] = BLUE_LED;
+        statusColor[1] = BLUE_LED;
+        statusColor[2] = BLUE_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case OUT_OF_FLASH: {  // out of flash memory
-        statusColor = BLUE_LED;
+        statusColor[0] = BLUE_LED;
+        statusColor[1] = BLUE_LED;
+        statusColor[2] = BLUE_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case DRL_ERR: {  // driver library encountered an error
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case BUS_FAULT: {  // Bus fault
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case USAGE_FAULT: {  // Usage fault
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ACC250_ADC_CONV_ERR: {  // 250G Accelerometer ADC conversion error
-        statusColor = RED_LED;
-        statusBlinkDelay[0] = STATUS_DOT;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
+        statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_RESET_ERR: {  // Altimeter failed to reset
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case ALT_PROM_ERR: {  // Altimeter PROM read failed
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case ALT_CRC_ERR: {  // Altimeter CRC check failed
-        statusColor = RED_LED;
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
+      case ALT_GPS_NOT_FOUND: { // Can't track altitude. UNSAFE!
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DOT;
+        break;
+      }
       case ALT_ADC_CONV_ERR: {  // Altimeter data retrieve failed
-        statusColor = YELLOW_LED;
+        statusColor[0] = YELLOW_LED;
+        statusColor[1] = YELLOW_LED;
+        statusColor[2] = YELLOW_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case COMPASS_ACCEL_STARTUP: {  // Compass accelerometer failed to initialize
-        statusColor = YELLOW_LED;
+        statusColor[0] = YELLOW_LED;
+        statusColor[1] = YELLOW_LED;
+        statusColor[2] = YELLOW_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case COMPASS_MAG_STARTUP: {  // Compass magnetometer failed to initialize
-        statusColor = YELLOW_LED;
+        statusColor[0] = YELLOW_LED;
+        statusColor[1] = YELLOW_LED;
+        statusColor[2] = YELLOW_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
-      case GPS_NAV_LOCK_HOLD: {  // GPS Nav lock hold
-        statusColor = WHITE_LED;
+      case GYRO_STARTUP_ERR: {  // Gyro failed to initialize
+        statusColor[0] = YELLOW_LED;
+        statusColor[1] = YELLOW_LED;
+        statusColor[2] = YELLOW_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
-        statusBlinkDelay[2] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
-      case GYRO_STARTUP_ERR: {  // Gyro failed to initialize
-        statusColor = YELLOW_LED;
-        statusBlinkDelay[0] = STATUS_DOT;
+      case GYRO_READ_ERR: {  // Gyro failed to initialize
+		  statusColor[0] = YELLOW_LED;
+		  statusColor[1] = YELLOW_LED;
+		  statusColor[2] = YELLOW_LED;
+		  statusBlinkDelay[0] = STATUS_DASH;
+		  statusBlinkDelay[1] = STATUS_DASH;
+		  statusBlinkDelay[2] = STATUS_DASH;
+		  break;
+      }
+      default: {
+        statusColor[0] = RED_LED;
+        statusColor[1] = RED_LED;
+        statusColor[2] = RED_LED;
+        statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DASH;
         statusBlinkDelay[2] = STATUS_DASH;
         break;
@@ -265,7 +329,7 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
     LEDClear();  // Turn all LEDS off
     statusBeepOn = true;
   } else if (statusBeepIndex < 3) {
-    LEDOn(statusColor);
+    LEDOn(statusColor[statusBeepIndex]);
     statusDelayIndex++;
     if (statusBlinkDelay[statusBeepIndex] == statusDelayIndex) {
       statusDelayIndex = 0;

@@ -8,6 +8,7 @@
 #ifndef __UART_H__
 #define __UART_H__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

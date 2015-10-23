@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+#include "gps.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
@@ -17,7 +19,6 @@
 #include "inc/hw_memmap.h"
 
 #include "gpio.h"
-#include "gps.h"
 #include "uart.h"
 
 #include "uartstdio.h"
@@ -26,8 +27,9 @@ static uint32_t gps_ui32Base;
 static bool gps_dataInitialized;
 
 static GPSData_t* gps_data;
-static int8_t* gps_nmeaGPGGA;
-static int8_t* gps_nmeaGPRMC;
+static int8_t* gps_nmeaGPGGA, *gps_nmeaGPRMC;
+static uint32_t gps_ui32NavLockPort;
+static uint8_t gps_ui8NavLockPin;
 
 static float gps_maxAlt;
 
@@ -37,7 +39,7 @@ char emulatedDataGGA[] = GPS_GPGGA;
 #endif
 
 void
-gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gpsData) {
+gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gpsData, uint32_t ui32NavLockPort, uint8_t ui8NavLockPin) {
   gps_ui32Base = ui32Base;
   gps_data = gpsData;
 
@@ -54,6 +56,17 @@ gpsInit(uint32_t ui32Base, uint32_t ui32Baud, uint32_t ui32Config, GPSData_t* gp
   // Initialize the GPIO
   UARTInit(ui32Base, ui32Baud, ui32Config);
   UARTIntInit(ui32Base, UART_INT_RX | UART_INT_RT);
+
+  //
+  // Initialize NavLock Pin
+  //
+  gpioInputInit(ui32NavLockPort, ui8NavLockPin, GPIO_PIN_TYPE_STD);
+  gps_ui32NavLockPort = ui32NavLockPort;
+  gps_ui8NavLockPin = ui8NavLockPin;
+}
+bool
+gpsNavLocked(void) {
+	return MAP_GPIOPinRead(gps_ui32NavLockPort, gps_ui8NavLockPin);
 }
 void
 gpsIntHandler(void) {

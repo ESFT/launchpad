@@ -5,6 +5,8 @@
  *      Author: Ryan
  */
 
+#include "ssi.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/ssi.h"
 #include "driverlib/pin_map.h"
@@ -16,7 +18,6 @@
 #include "inc/hw_ssi.h"
 #include "inc/hw_types.h"
 
-#include "ssi.h"
 
 void
 SSIInit(uint32_t ui32Base, uint32_t ui32Protocol, uint32_t ui32Mode, uint32_t ui32BitRate, uint32_t ui32DataWidth) {

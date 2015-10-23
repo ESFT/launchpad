@@ -190,7 +190,7 @@ extern "C"
 {
 #endif
 
-extern StatusCode_t compassInit(uint32_t ui32Base, bool bSpeed);
+extern StatusCode_t compassInit(uint32_t ui32Base, bool bSpeed, StatusCode_t* status);
 
 //
 // Accelerometer

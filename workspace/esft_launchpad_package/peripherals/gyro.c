@@ -7,16 +7,17 @@
 
 #include <math.h>
 
-#include "driverlib/gpio.h"
-#include "driverlib/rom.h"
-#include "driverlib/rom_map.h"
-
-#include "gpio.h"
 #include "gyro.h"
+#include "gpio.h"
 #include "i2c.h"
 #include "misc.h"
 #include "sensor_constants.h"
 #include "status.h"
+
+#include "driverlib/gpio.h"
+#include "driverlib/rom.h"
+#include "driverlib/rom_map.h"
+
 
 static uint32_t gyro_ui32Base;
 static uint8_t gyro_ui8GyroAddr;
@@ -29,6 +30,8 @@ static float gyro_fThreshold[3] = { 0, 0, 0 };
 static int16_t gyro_i16Raw[3] = { 0, 0, 0 };
 static bool gyro_dataAvailable;
 
+static StatusCode_t *gyro_status;
+
 float* gyro_fDPS;
 
 void
@@ -36,6 +39,8 @@ gyroIntHandler() {
   MAP_GPIOIntClear(gyro_ui32SenseBase, gyro_ui32IntFlags);
   if (gyroReadXYZ()) {
     gyro_dataAvailable = true;
+  } else {
+    *gyro_status = GYRO_READ_ERR;
   }
 }
 void
@@ -43,8 +48,7 @@ gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple) {
   float fSums[3] = { 0, 0, 0 }, fSigma[3] = { 0, 0, 0 };
   uint32_t i, j;
   for (i = 0; i < ui32SampleCount; i++) {
-    while (!gyroReceive()) {
-    }
+    while (!gyroReceive()) {}
     for (j = 0; j < 3; j++) {
       fSums[j] += gyro_i16Raw[j];
       fSigma[j] += pow(gyro_i16Raw[j], 2);
@@ -56,11 +60,12 @@ gyroCalibrate(uint32_t ui32SampleCount, uint32_t ui32SigmaMultiple) {
   }
 }
 StatusCode_t
-gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS) {
+gyroInit(uint32_t ui32Base, uint8_t ui8GyroAddr, bool bSpeed, uint32_t ui32SenseBase, uint8_t ui8SensePin, float* fDPS, StatusCode_t* status) {
   gyro_ui32Base = ui32Base;
   gyro_ui8GyroAddr = ui8GyroAddr;
   gyro_ui32SenseBase = ui32SenseBase;
   gyro_fDPS = fDPS;
+  gyro_status = status;
 
   //
   // Enable the I2C module used by the gyro

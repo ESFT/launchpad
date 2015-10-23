@@ -5,6 +5,8 @@
  *      Author: Ryan
  */
 
+#include "misc.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
@@ -15,7 +17,6 @@
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
 
-#include "misc.h"
 #include "uart.h"
 #include "uartstdio.h"
 

@@ -149,7 +149,7 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         break;
       }
       case INITIALIZING_HOLD: {  // device is initializing hold
-	    statusColor[0] = WHITE_LED;
+	statusColor[0] = WHITE_LED;
     	statusColor[1] = WHITE_LED;
     	statusColor[2] = WHITE_LED;
         statusBlinkDelay[0] = STATUS_DASH;
@@ -166,13 +166,13 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
-      case MMC_MOUNT_ERR: {
+      case OUT_OF_FLASH: {  // out of flash memory
         statusColor[0] = BLUE_LED;
         statusColor[1] = BLUE_LED;
         statusColor[2] = BLUE_LED;
-        statusBlinkDelay[0] = STATUS_DASH;
-        statusBlinkDelay[1] = STATUS_DASH;
-        statusBlinkDelay[2] = STATUS_DASH;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
+        statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
       case MMC_OPEN_ERR: {
@@ -184,13 +184,13 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
-      case OUT_OF_FLASH: {  // out of flash memory
+      case MMC_MOUNT_ERR: {
         statusColor[0] = BLUE_LED;
         statusColor[1] = BLUE_LED;
         statusColor[2] = BLUE_LED;
-        statusBlinkDelay[0] = STATUS_DOT;
-        statusBlinkDelay[1] = STATUS_DOT;
-        statusBlinkDelay[2] = STATUS_DOT;
+        statusBlinkDelay[0] = STATUS_DASH;
+        statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DASH;
         break;
       }
       case DRL_ERR: {  // driver library encountered an error
@@ -217,15 +217,6 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DOT;
         statusBlinkDelay[1] = STATUS_DASH;
-        statusBlinkDelay[2] = STATUS_DOT;
-        break;
-      }
-      case ACC250_ADC_CONV_ERR: {  // 250G Accelerometer ADC conversion error
-        statusColor[0] = RED_LED;
-        statusColor[1] = RED_LED;
-        statusColor[2] = RED_LED;
-        statusBlinkDelay[0] = STATUS_DASH;
-        statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
@@ -262,6 +253,15 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         statusColor[2] = RED_LED;
         statusBlinkDelay[0] = STATUS_DASH;
         statusBlinkDelay[1] = STATUS_DASH;
+        statusBlinkDelay[2] = STATUS_DOT;
+        break;
+      }
+      case ACC250_ADC_CONV_ERR: {  // 250G Accelerometer ADC conversion error
+        statusColor[0] = YELLOW_LED;
+        statusColor[1] = YELLOW_LED;
+        statusColor[2] = YELLOW_LED;
+        statusBlinkDelay[0] = STATUS_DOT;
+        statusBlinkDelay[1] = STATUS_DOT;
         statusBlinkDelay[2] = STATUS_DOT;
         break;
       }
@@ -302,13 +302,13 @@ statusIntHandler(void) {  // Timer interrupt to handle status codes
         break;
       }
       case GYRO_READ_ERR: {  // Gyro failed to initialize
-		  statusColor[0] = YELLOW_LED;
-		  statusColor[1] = YELLOW_LED;
-		  statusColor[2] = YELLOW_LED;
-		  statusBlinkDelay[0] = STATUS_DASH;
-		  statusBlinkDelay[1] = STATUS_DASH;
-		  statusBlinkDelay[2] = STATUS_DASH;
-		  break;
+	statusColor[0] = YELLOW_LED;
+	statusColor[1] = YELLOW_LED;
+	statusColor[2] = YELLOW_LED;
+	statusBlinkDelay[0] = STATUS_DASH;
+	statusBlinkDelay[1] = STATUS_DASH;
+	statusBlinkDelay[2] = STATUS_DASH;
+	break;
       }
       default: {
         statusColor[0] = RED_LED;
